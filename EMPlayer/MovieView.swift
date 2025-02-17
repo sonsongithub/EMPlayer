@@ -22,7 +22,7 @@ import SwiftUI
 
 class MovieDetailLoader : ObservableObject {
     
-    @Published var movies: [MovieInfo] = []
+//    @Published var movies: [MovieInfo] = []
     
     func login(server: String, userID: String, token: String, itemID: String, completion: @escaping (Bool, URL?) -> Void) {
         // Users/{user_id}/Items/{item_id}

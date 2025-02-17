@@ -10,6 +10,56 @@
 
 import UIKit
 
+enum ItemType: String, Decodable, Encodable {
+    case audio = "audio"
+    case video = "video"
+    case folder = "folder"
+    case episode = "episode"
+    case movie = "movie"
+    case trailer = "trailer"
+    case adultVideo = "adultvideo"
+    case musicVideo = "musicvideo"
+    case boxSet = "boxset"
+    case musicAlbum = "musicalbum"
+    case musicArtist = "musicartist"
+    case season = "season"
+    case series = "series"
+    case game = "game"
+    case gameSystem = "gamesystem"
+    case book = "book"
+    case collectionFolder = "collectionfolder"
+    case unknown
+    
+    init(from decoder: Decoder) throws {
+        let label = try decoder.singleValueContainer().decode(String.self).lowercased()
+        self = ItemType(rawValue: label) ?? .unknown
+    }
+
+}
+
+enum CollectionType: String, Decodable, Encodable {
+    case musicAlbum = "musicalbum"
+    case audioBooks = "audiobooks"
+    case books = "books"
+    case boxSets = "boxsets"
+    case games = "games"
+    case homeVideos = "homevideos"
+    case liveTv = "livetv"
+    case movies = "movies"
+    case music = "music"
+    case musicVideos = "musicvideos"
+    case photos = "photos"
+    case playlists = "playlists"
+    case trailers = "trailers"
+    case tvShows = "tvshows"
+    case unknown
+    
+    init(from decoder: Decoder) throws {
+        let label = try decoder.singleValueContainer().decode(String.self).lowercased()
+        self = CollectionType(rawValue: label) ?? .unknown
+    }
+}
+
 struct QueryResult<T: Codable>: Codable {
     let items: [T]
     let totalRecordCount: Int
@@ -120,7 +170,7 @@ protocol PlayableIteming: Codable {
     var seasonTitleText: String? { get }
     var mediaSources: [MediaSource] { get }
     var mediaStreams: [MediaStream] { get }
-    var type: String { get }
+    var type: ItemType { get }
     var userData: UserData? { get }
     var runTime: Int { get }
     var externalLinks: [ExternalLinks]? { get }
@@ -217,7 +267,6 @@ struct ExternalLinks: Codable {
 }
 
 struct PlayableMovie: PlayableIteming {
-
     let userData: UserData?
     let id: String
     var hasSubtitle: Bool?
@@ -226,7 +275,7 @@ struct PlayableMovie: PlayableIteming {
     var height: Int
     var mediaSources: [MediaSource]
     var mediaStreams: [MediaStream]
-    var type: String
+    var type: ItemType
     let name: String
     let originalTitle: String?
     let sourceType: String?
@@ -332,7 +381,7 @@ struct PlayableItem: PlayableIteming, Hashable {
     var seasonTitleText: String? { return seasonName }
     let mediaSources: [MediaSource]
     let mediaStreams: [MediaStream]
-    let type: String
+    let type: ItemType
     let userData: UserData?
     let runTime: Int
     let genres: [String]?
@@ -394,7 +443,7 @@ struct SyncItem: PlayableIteming, Hashable {
     var mediaSources: [MediaSource] { [] }
     let mediaSource: SyncMediaSource?
     var mediaStreams: [MediaStream] { mediaSource?.mediaStreams ?? [] }
-    var type: String { "Movie" }
+    var type: ItemType { .movie }
     let userData: UserData?
     var runTime: Int { 0 }
     let genres: [String]?
@@ -438,7 +487,7 @@ struct SyncItem: PlayableIteming, Hashable {
                      indexNumber: indexNumber,
                      mediaSources: mediaSources,
                      mediaStreams: mediaStreams,
-                     type: "Unknown",
+                     type: .unknown,
                      userData: userData,
                      runTime: 0,
                      genres: genres,
@@ -467,7 +516,8 @@ struct BaseItem: Codable {
     let mediaStreams: [MediaStream]?
     let indexNumber: Int?
     let isFolder: Bool?
-    let type: String?
+    let type: ItemType
+    let collectionType: CollectionType?
 
     let userData: UserData?
     
@@ -480,7 +530,7 @@ struct BaseItem: Codable {
         return nil
     }
 
-    init(name: String, originalTitle: String?, id: String, sourceType: String?, hasSubtitle: Bool?, path: String?, overview: String?, aspectRatio: String?, isHD: Bool?, seriesId: String?, seriesName: String?, seasonName: String?, width: Int?, height: Int?, mediaSource: [MediaSource]?, mediaStreams: [MediaStream]?, indexNumber: Int?, isFolder: Bool?, type: String?, userData: UserData?, imageTags: ImageTags?) {
+    init(name: String, originalTitle: String?, id: String, sourceType: String?, hasSubtitle: Bool?, path: String?, overview: String?, aspectRatio: String?, isHD: Bool?, seriesId: String?, seriesName: String?, seasonName: String?, width: Int?, height: Int?, mediaSource: [MediaSource]?, mediaStreams: [MediaStream]?, indexNumber: Int?, isFolder: Bool?, type: ItemType?, userData: UserData?, imageTags: ImageTags?, collectionType: CollectionType?) {
         self.name = name
         self.originalTitle = originalTitle
         self.id = id
@@ -499,9 +549,14 @@ struct BaseItem: Codable {
         self.mediaSource = mediaSource
         self.indexNumber = indexNumber
         self.isFolder = isFolder
-        self.type = type
+        if let type = type {
+            self.type = type
+        } else {
+            self.type = .unknown
+        }
         self.userData = userData
         self.imageTags = imageTags
+        self.collectionType = collectionType
     }
 
     init(item: PlayableItem) {
@@ -531,7 +586,8 @@ struct BaseItem: Codable {
                   isFolder: false,
                   type: item.type,
                   userData: userData,
-                  imageTags: item.imageTags
+                  imageTags: item.imageTags,
+                  collectionType: nil
         )
     }
 
@@ -557,6 +613,7 @@ struct BaseItem: Codable {
         case mediaStreams   = "MediaStreams"
         case userData       = "UserData"
         case imageTags      = "ImageTags"
+        case  collectionType = "CollectionType"
     }
 
 //    func session(positionTicks: Int? = nil) -> PlaybackStart {

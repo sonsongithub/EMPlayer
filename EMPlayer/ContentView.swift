@@ -11,13 +11,14 @@ struct ContentView: View {
     @StateObject private var appState = AppState()
     @State private var showAuthModal = false
     
-    @ObservedObject private var loader = MovieLoader()
+    @ObservedObject private var loader = UserViewsLoader()
     
     @State private var path = NavigationPath()
     
     @ViewBuilder
     func nextView(item: BaseItem) -> some View {
-        if item.type == "CollectionFolder" || item.type == "BoxSet" || item.type == "Series" || item.type == "Season" {
+//        if item.type == "CollectionFolder" || item.type == "BoxSet" || item.type == "Series" || item.type == "Season" {
+        if item.type == .collectionFolder || item.type == .boxSet || item.type == .series || item.type == .season {
             CollectionView(item: item)
         } else {
             DetailView(movieID: item.id)
@@ -37,24 +38,24 @@ struct ContentView: View {
                                 image
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 150, height: 200)
+                                    .frame(width: 200, height: 150)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             case .failure:
                                 Image(systemName: "photo")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 150, height: 200)
+                                    .frame(width: 200, height: 150)
                                     .foregroundColor(.gray)
                             @unknown default:
                                 EmptyView()
                             }
                         }
-                        .frame(width: 150, height: 200)
+                        .frame(width: 200, height: 150)
                     } else {
                         Image(systemName: "photo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 150, height: 200)
+                            .frame(width: 200, height: 150)
                             .foregroundColor(.gray)
                     }
                     
@@ -81,15 +82,7 @@ struct ContentView: View {
                 }
             }
             .onChange(of: appState.userID) { newValue in
-                print("userID updated")
-                if appState.ready {
-                    print("a")
-                    if let server = self.appState.server, let token = self.appState.token, let userID = appState.userID {
-                        loader.login(server: server, token: token, userID: userID) { success, hoge in
-                            print("ok?")
-                        }
-                    }
-                }
+                fetchContent()
             }
         }
     }

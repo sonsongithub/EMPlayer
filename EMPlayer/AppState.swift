@@ -38,6 +38,7 @@ class AppState: ObservableObject {
         }
         if let savedToken = UserDefaults.standard.string(forKey: "token"), token == nil {
             token = savedToken
+            token = "errror"
         }
         if let savedUserID = UserDefaults.standard.string(forKey: "userID"), userID == nil {
             userID = savedUserID

@@ -17,9 +17,10 @@ struct ContentView: View {
     
     @ViewBuilder
     func nextView(item: BaseItem) -> some View {
-//        if item.type == "CollectionFolder" || item.type == "BoxSet" || item.type == "Series" || item.type == "Season" {
-        if item.type == .collectionFolder || item.type == .boxSet || item.type == .series || item.type == .season {
+        if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
             CollectionView(item: item)
+        } else if item.type == .series {
+            SeriesView(series: item).environmentObject(appState)
         } else {
             DetailView(movieID: item.id)
         }
@@ -58,19 +59,14 @@ struct ContentView: View {
                             .frame(width: 200, height: 150)
                             .foregroundColor(.gray)
                     }
-                    
                     // 名前を表示
                     Text(movie.name)
                         .font(.headline)
                         .padding(.leading, 8)
-                    
-                    Spacer()
                 }
-                .padding(.vertical, 4)
+//                .padding(.vertical, 4)
                 }
         }
-        .navigationTitle("Top")
-        .navigationBarBackButtonHidden(false)
             .sheet(isPresented: $showAuthModal) {
                 AuthFlowView().environmentObject(appState)
             }

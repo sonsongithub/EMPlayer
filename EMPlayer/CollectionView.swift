@@ -7,20 +7,16 @@
 
 import SwiftUI
 
-//def item_detail(item_id, server=EMBY_SERVER, api_key=API_KEY, user_id=USER_ID):
-//    url = f"{server}/Users/{user_id}/Items/{item_id}"
-//    headers = {"X-Emby-Token": api_key}
-//    
-//    response = requests.get(url, headers=headers)
-//    
-//    if response.status_code == 200:
-//        response_json = response.json()
-//        return response_json
-//    else:
-//        raise Exception(f"Item {item_id} not found! Status: {response.status_code}")
-
 class ContentsIncludingSome: ObservableObject {
     @Published var items: [BaseItem] = []
+    
+    static func forPreivew() -> ContentsIncludingSome {
+        let con = ContentsIncludingSome()
+        for _ in (0..<20) {
+            con.items.append(BaseItem.dummy)
+        }
+        return con
+    }
     
     func getDetailfuncGet(server: String, token: String, userID: String, itemID: String, completion: @escaping (Bool, BaseItem?) -> Void) {
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(itemID)") else {
@@ -132,7 +128,39 @@ class ContentsIncludingSome: ObservableObject {
     }
 }
 
+struct RowView: View {
+    let appState: AppState
+    let items: [BaseItem]
+    let width: CGFloat
+    let height: CGFloat
+    let horizontalSpacing: CGFloat
+    var body: some View {
+        HStack(spacing: horizontalSpacing) {
+            ForEach(items, id: \.id) { item in
+                CollectionItemView(item: item, appState: appState)
+                    .frame(width: width, height: height)
+            }
+        }
+        .padding()
+    }
+}
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
+    }
+}
+
 struct CollectionView: View {
+    
+    let minWidth: CGFloat = 60  // カラムの最小幅
+    let maxWidth: CGFloat = 150  // カラムの最大幅
+    let horizontalSpacing: CGFloat = 16
+    
+    
+    let itemPerRow: CGFloat = 8
     
     @EnvironmentObject var appState: AppState
     
@@ -143,69 +171,43 @@ struct CollectionView: View {
         self.item = item
     }
     
-    @ViewBuilder
-    func nextView(item: BaseItem) -> some View {
-//        if item.type == "CollectionFolder" || item.type == "BoxSet" || item.type == "Series" || item.type == "Season" {
-        if item.type == .collectionFolder || item.type == .boxSet || item.type == .series || item.type == .season {
-            CollectionView(item: item)
-        } else {
-            DetailView(movieID: item.id)
-        }
+    init(con: ContentsIncludingSome) {
+        self.item = BaseItem.dummy
+        self.con = con
     }
-    
+     
     var body: some View {
         NavigationStack {
-            
-            List(con.items, id: \.id) { item in
-                NavigationLink(destination: nextView(item: item).environmentObject(appState)) {
-                    HStack {
-                        if let url = item.imageURL(server: appState.server!) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView()
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 150, height: 200)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                case .failure:
-                                    Image(systemName: "photo")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 150, height: 200)
-                                        .foregroundColor(.gray)
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            .frame(width: 150, height: 200)
-                        } else {
-                            Image(systemName: "photo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 150, height: 200)
-                            
-                                .foregroundColor(.gray)
+            GeometryReader { geometry in
+                let availableWidth = geometry.size.width
+                let itemPerRow = max(1, Int(availableWidth / maxWidth))
+                let columnWidth = max(minWidth, (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow))
+                let height = floor(columnWidth * 10.0 / 7.0 + 10)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        let rows = self.con.items.chunked(into: itemPerRow)
+                        ForEach(rows.indices, id: \.self) { rowIndex in
+                            RowView(appState: appState, items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
                         }
-                        VStack {
-                            Text(item.name)
-                            Text(item.overview ?? "")
-                        }
+                        Spacer()
                     }
-                }
-            }
-            .navigationTitle(item.name)
-            .navigationBarBackButtonHidden(false)
-            .onAppear {
-                
-                if let server = appState.server, let userID = appState.userID, let token = appState.token {
-                    con.get(server: server, token: token, userID: userID, parentID: item.id, parent: item) { success, string in
-                    }
-                }
-                    
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .onAppear {
+        
+            if let server = appState.server, let userID = appState.userID, let token = appState.token {
+                con.get(server: server, token: token, userID: userID, parentID: item.id, parent: item) { success, string in
+                }
+            }
+        
+        }
+        .navigationTitle(item.name)
+    }
+}
+
+struct CollectionView_Previews: PreviewProvider {
+    static var previews: some View {
+        CollectionView(con: ContentsIncludingSome.forPreivew()).environmentObject(AppState())
     }
 }

@@ -9,14 +9,21 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
     
     @State private var username = ""
     @State private var password = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
     
-    let loginModel = LoginModel()
+    let server: String
+    
+    let apiClient = APIClient()
 
+    init(server: String) {
+        self.server = server
+    }
+    
     var body: some View {
         VStack {
             Text("Login: \(String(describing: self.appState.server))")
@@ -49,27 +56,25 @@ struct LoginView: View {
     func login() {
         isLoading = true
         errorMessage = nil
-        
-        guard let server = self.appState.server else { return }
-        loginModel.login(server: server, username: username, password: password) { success, token in
-            if success {
-                if let token = token {
-                    self.loginModel.getUserInfo(server: server, token: token) { success, id in
-                        if let id = id {
-                            DispatchQueue.main.async {
-                                self.appState.userID = id
-                                self.appState.token = token
-                                self.appState.saveToUserDefaults()
-                            }
-                        }
-                        isLoading = true
-                    }
-                } else {
-                    isLoading = false
+        Task {
+            do {
+                let authenticationResponse = try await self.apiClient.login(server: self.server, username: username, password: password)
+                let account = Account(serverAddress: self.server, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
+                DispatchQueue.main.async {
+                    self.accountManager.saveAccount(account)
+                    self.appState.isAuthenticated = true
+                    self.appState.userID = account.userID
+                    self.appState.server = account.serverAddress
+                    self.appState.token = account.token
+                    self.isLoading = false
+                    self.errorMessage = nil
                 }
-            } else {
-                print("error")
-                isLoading = false
+            } catch {
+                print(error)
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = error.localizedDescription
+                }
             }
         }
     }

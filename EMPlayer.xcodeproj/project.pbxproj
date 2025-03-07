@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14AD4F832D789785006BC534 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 14AD4F822D789785006BC534 /* KeychainAccess */; };
 		14F199602D6020DE0094FE11 /* CocoaAsyncSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 14F1995F2D6020DE0094FE11 /* CocoaAsyncSocket */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14AD4F832D789785006BC534 /* KeychainAccess in Frameworks */,
 				14F199602D6020DE0094FE11 /* CocoaAsyncSocket in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,6 +73,7 @@
 			name = EMPlayer;
 			packageProductDependencies = (
 				14F1995F2D6020DE0094FE11 /* CocoaAsyncSocket */,
+				14AD4F822D789785006BC534 /* KeychainAccess */,
 			);
 			productName = EMPlayer;
 			productReference = 14F199402D601A000094FE11 /* EMPlayer.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				14F1995E2D6020DE0094FE11 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */,
+				14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 14F199412D601A000094FE11 /* Products */;
@@ -349,6 +353,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 		14F1995E2D6020DE0094FE11 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/robbiehanson/CocoaAsyncSocket.git";
@@ -360,6 +372,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		14AD4F822D789785006BC534 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
 		14F1995F2D6020DE0094FE11 /* CocoaAsyncSocket */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 14F1995E2D6020DE0094FE11 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */;

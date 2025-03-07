@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+enum AppStateError: Error {
+    case notReady
+}
+
 class AppState: ObservableObject {
     
     // Caution, this is not a safety code.
@@ -19,9 +23,21 @@ class AppState: ObservableObject {
     @Published var server: String?
     @Published var token: String?
     @Published var userID: String?
+    @Published var isAuthenticated: Bool = false
 
     init() {
+        UserDefaults.standard.removeObject(forKey: "server")
+        UserDefaults.standard.removeObject(forKey: "token")
+        UserDefaults.standard.removeObject(forKey: "userID")
+//        UserDefaults.standard.synchronize()
         loadFromUserDefaults()
+    }
+    
+    func get() throws -> (String, String, String) {
+        guard let server = server, let token = token, let userID = userID else {
+            throw AppStateError.notReady
+        }
+        return (server, token, userID)
     }
 
     public func saveToUserDefaults() {
@@ -38,7 +54,6 @@ class AppState: ObservableObject {
         }
         if let savedToken = UserDefaults.standard.string(forKey: "token"), token == nil {
             token = savedToken
-            token = "errror"
         }
         if let savedUserID = UserDefaults.standard.string(forKey: "userID"), userID == nil {
             userID = savedUserID

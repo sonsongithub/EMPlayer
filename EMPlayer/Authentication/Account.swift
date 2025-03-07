@@ -6,10 +6,72 @@
 //
 
 import SwiftUI
+import SwiftUI
+import KeychainAccess
 
-//{"Name":"最終日と彼女-ギリカノ-","ServerId":"39d8b1de74624e758f36e494679f4cbd","Id":"11341","RunTimeTicks":14300940000,"IndexNumber":4,"ParentIndexNumber":3,"IsFolder":false,"Type":"Episode","ParentLogoItemId":"11206","ParentBackdropItemId":"11206","ParentBackdropImageTags":["d30197cb022d0a6672c5cdadf9f8fc4d"],"SeriesName":"彼女、お借りします","SeriesId":"11206","SeasonId":"11320","SeriesPrimaryImageTag":"d44bfb3e31b55fe8e63bfbed235933a9","SeasonName":"シーズン 3","ImageTags":{"Primary":"e51222b67c3124b79599c56b2b1285f0"},"BackdropImageTags":[],"ParentLogoImageTag":"c5b91121356e0aaf9bdeed7f69e2ec3c","MediaType":"Video"}
+struct Account: Codable {
+    let serverAddress: String
+    let username: String
+    let userID: String
+    var token: String
+}
 
-// ログインモデル
+typealias AccountKey = String
+
+class AccountManager: ObservableObject {
+    private let keychain = Keychain(service: "com.sonson.EMPlayer")
+
+    // 読み込んだアカウントリストを @Published で公開
+    @Published var accounts: [AccountKey: Account] = [:]
+    @Published var names: [String] = []
+
+    init() {
+        loadAccounts()
+    }
+    
+    func displayName(for key: AccountKey) -> String {
+        guard let account = accounts[key] else {
+            return ""
+        }
+        return "\(account.username)@\(account.serverAddress)"
+    }
+
+    func saveAccount(_ account: Account) {
+        let key = "\(account.serverAddress)|\(account.username)"
+        if let data = try? JSONEncoder().encode(account) {
+            keychain[data: key] = data
+        }
+        loadAccounts() // データを保存したら再読み込み
+    }
+
+    func loadAccounts() {
+        var newAccounts: [AccountKey: Account] = [:]
+        for key in (try? keychain.allKeys()) ?? [] {
+            if let data = keychain[data: key],
+               let account = try? JSONDecoder().decode(Account.self, from: data) {
+                newAccounts[key] = account
+            }
+        }
+        DispatchQueue.main.async {
+            self.accounts = newAccounts
+            self.names = newAccounts.values.map { "\($0.serverAddress)|\($0.username)" }
+        }
+    }
+
+    func deleteAccount(server: String, username: String) {
+        let key = "\(server)|\(username)"
+        try? keychain.remove(key)
+        loadAccounts() // 削除後に再読み込み
+    }
+    
+    func deleteAll() {
+        for key in (try? keychain.allKeys()) ?? [] {
+            try? keychain.remove(key)
+        }
+        loadAccounts()
+    }
+}
+
 class LoginModel: ObservableObject {
     @State public var accessToken = ""
     
@@ -60,6 +122,7 @@ class LoginModel: ObservableObject {
     
     func login(server: String, username: String, password: String, completion: @escaping (Bool, String?) -> Void) {
         guard let url = URL(string: "\(server)/Users/AuthenticateByName") else {
+            print("\(server) - error?")
             completion(false, nil)
             return
         }
@@ -82,6 +145,7 @@ class LoginModel: ObservableObject {
             request.httpBody = jsonData
             
             URLSession.shared.dataTask(with: request) { data, response, error in
+                print(error)
                 guard let httpResponse = response as? HTTPURLResponse, let data = data, error == nil else {
                     completion(false, nil)
                     return

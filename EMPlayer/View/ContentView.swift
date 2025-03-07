@@ -64,8 +64,7 @@ struct ContentView: View {
                         .font(.headline)
                         .padding(.leading, 8)
                 }
-//                .padding(.vertical, 4)
-                }
+            }
         }
             .sheet(isPresented: $showAuthModal) {
                 AuthFlowView().environmentObject(appState)

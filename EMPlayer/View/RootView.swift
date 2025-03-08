@@ -48,7 +48,7 @@ struct RootView: View {
                 }
             }
             .sheet(isPresented: $showAuthSheet) {
-                AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
+                AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState).interactiveDismissDisabled(true)
             }
             .onChange(of: appState.isAuthenticated) {
                 showAuthSheet = !appState.isAuthenticated

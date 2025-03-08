@@ -26,7 +26,7 @@ struct LoginView: View {
     
     var body: some View {
         VStack {
-            Text("Login: \(String(describing: self.appState.server))")
+            Text("Login: \(String(describing: self.server))")
                 .font(.title2)
                 .padding()
 

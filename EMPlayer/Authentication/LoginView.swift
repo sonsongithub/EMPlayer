@@ -79,3 +79,12 @@ struct LoginView: View {
         }
     }
 }
+
+#Preview {
+    let accountManager = AccountManager()
+    let appState = AppState()
+    return LoginView(server: "http://localhost:8080")
+        .environmentObject(accountManager)
+        .environmentObject(appState)
+}
+

@@ -16,7 +16,7 @@ struct AuthenticationView: View {
     var body: some View {
         NavigationStack {
             ServerSelectionView().environmentObject(appState).environmentObject(accountManager)
-                .navigationTitle("サーバ選択")
+                .navigationTitle("Select server")
                 .onChange(of: appState.server) {
                     print("server updated")
                     if appState.ready {
@@ -40,5 +40,7 @@ struct AuthenticationView: View {
 }
 
 #Preview {
-//    AuthenticationView()
+    @State var showAuthSheet = false
+    let appState = AppState()
+    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
 }

@@ -91,3 +91,9 @@ struct ServerSelectionView: View {
         }
     }
 }
+
+#Preview {
+    @State var showAuthSheet = false
+    let appState = AppState()
+    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
+}

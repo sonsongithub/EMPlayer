@@ -17,9 +17,6 @@ enum APIClientError: Error {
 class APIClient {
     let decoder = JSONDecoder()
     
-    init() {
-    }
-    
     func login(server: String, username: String, password: String) async throws -> AuthenticationResponse {
         guard let urlComponents = URLComponents(string: "\(server)/Users/AuthenticateByName") else {
             throw APIClientError.cannotCreateURL

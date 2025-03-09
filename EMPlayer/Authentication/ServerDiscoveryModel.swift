@@ -84,7 +84,7 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
             self.servers.append(serverInfo)
             print(serverInfo)
         } catch {
-            print("デコードエラー: \(error)")
+            print("UDP packet data decoding: \(error)")
         }
     }
 }

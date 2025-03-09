@@ -60,14 +60,14 @@ struct ServerSelectionView: View {
             .navigationDestination(for: ServerInfo.self) { value in
                 LoginView(server: value.address).environmentObject(accountManager).environmentObject(appState)
             }
-            .alert("ログインできませんでした．", isPresented: $showErrorAlert, actions: {
+            .alert("Can not login to the server.", isPresented: $showErrorAlert, actions: {
                 Button("OK", role: .cancel) {}
             })
-            .alert("Loginデータを削除しますか？", isPresented: $showAlert) {
-                Button("キャンセル", role: .cancel) {}
-                Button("削除", role: .destructive) { accountManager.deleteAll() }
+            .alert("Are you sure to delete your history?", isPresented: $showAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { accountManager.deleteAll() }
             } message: {
-                Text("この操作は取り消せません")
+                Text("This operation cannot be undone.")
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

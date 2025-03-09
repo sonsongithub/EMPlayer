@@ -1,0 +1,60 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "Are you sure to delete your history?" : {
+
+    },
+    "Can not login to the server." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Found servers" : {
+
+    },
+    "History" : {
+
+    },
+    "login" : {
+
+    },
+    "Login" : {
+
+    },
+    "Login to server" : {
+
+    },
+    "Login: %@" : {
+
+    },
+    "OK" : {
+
+    },
+    "Password" : {
+
+    },
+    "Select server" : {
+
+    },
+    "This operation cannot be undone." : {
+
+    },
+    "User name" : {
+
+    },
+    "Username" : {
+
+    },
+    "wait..." : {
+
+    }
+  },
+  "version" : "1.0"
+}

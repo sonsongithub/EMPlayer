@@ -81,7 +81,7 @@ struct RootViewItemView: View {
     @ViewBuilder
     func nextView(item: BaseItem) -> some View {
         if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
-            CollectionView(item: item)
+            CollectionView(item: item, appState: appState)
         } else if item.type == .series {
             SeriesView(series: item)
         } else {

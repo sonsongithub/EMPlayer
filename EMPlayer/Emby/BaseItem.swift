@@ -523,39 +523,6 @@ struct BaseItem: Codable {
     
     let imageTags: ImageTags?
     
-    static var dummy: BaseItem = BaseItem(name: "ガンダム",
-                                      originalTitle: nil,
-                                      id: UUID().uuidString,
-                                      sourceType: nil,
-                                      hasSubtitle: nil,
-                                      path: nil,
-                                      overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
-                                      aspectRatio: nil,
-                                      isHD: nil,
-                                      seriesId: nil,
-                                      seriesName: nil,
-                                      seasonName: nil,
-                                      width: nil,
-                                      height: nil,
-                                      mediaSource: nil,
-                                      mediaStreams: nil,
-                                      indexNumber: nil,
-                                      isFolder: nil,
-                                      type: nil,
-                                      userData: nil,
-                                      imageTags: nil,
-                                      collectionType: nil)
-    
-    func imageURL(server: String?) -> URL? {
-        if let _ = imageTags?.primary, let server = server {
-            return URL(string: "\(server)/Items/\(self.id)/Images/Primary")!
-        }
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return URL(string: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/11XJ0CUYn06Mht3qeGKJfVuWnYP.jpg")!
-        }
-        return nil
-    }
-
     init(name: String, originalTitle: String?, id: String, sourceType: String?, hasSubtitle: Bool?, path: String?, overview: String?, aspectRatio: String?, isHD: Bool?, seriesId: String?, seriesName: String?, seasonName: String?, width: Int?, height: Int?, mediaSource: [MediaSource]?, mediaStreams: [MediaStream]?, indexNumber: Int?, isFolder: Bool?, type: ItemType?, userData: UserData?, imageTags: ImageTags?, collectionType: CollectionType?) {
         self.name = name
         self.originalTitle = originalTitle

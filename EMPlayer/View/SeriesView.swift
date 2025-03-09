@@ -229,17 +229,17 @@ struct HorizontalSeasonView: View {
     }
 }
 
-struct HorizontalSeasonView_Previews: PreviewProvider {
-    static var previews: some View {
-        ScrollView {
-            VStack {
-                HorizontalSeasonView(season: BaseItem.dummy)
-                HorizontalSeasonView(season: BaseItem.dummy)
-                HorizontalSeasonView(season: BaseItem.dummy)
-            }
-        }
-    }
-}
+//struct HorizontalSeasonView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ScrollView {
+//            VStack {
+//                HorizontalSeasonView(season: BaseItem.dummy)
+//                HorizontalSeasonView(season: BaseItem.dummy)
+//                HorizontalSeasonView(season: BaseItem.dummy)
+//            }
+//        }
+//    }
+//}
 
 struct SeriesView: View {
     @EnvironmentObject var appState: AppState
@@ -315,11 +315,10 @@ struct HorizontalSeasonEpisodeView: View {
     }
 }
 
-struct HorizontalSeasonEpisodeView_Preview: PreviewProvider {
-    static var previews: some View {
-        HorizontalSeasonEpisodeView(item: BaseItem.dummy).environmentObject(AppState())
-            .border(.red)
-            .frame(width: 400, height: 350) // View自体のサイズを制限
-//            .previewLayout(.sizeThatFits)
-    }
+#Preview {
+    let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
+    SeriesView(series: BaseItem.dummy).environmentObject(appState)
+//    HorizontalSeasonEpisodeView(item: BaseItem.dummy).environmentObject(appState)
+//        .border(.red)
+//        .frame(width: 400, height: 350)
 }

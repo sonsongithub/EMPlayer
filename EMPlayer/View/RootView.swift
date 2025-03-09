@@ -15,6 +15,9 @@ class RootViewController: ObservableObject {
     
     init(appState: AppState) {
         self.appState = appState
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            self.items = [BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy]
+        }
     }
     
     @MainActor
@@ -29,6 +32,64 @@ class RootViewController: ObservableObject {
     
 }
 
+struct RootViewItemView: View {
+    let item: BaseItem
+    let appState: AppState
+    let width = CGFloat(200)
+    let height = CGFloat(150)
+    var body: some View {
+        GeometryReader { geometry in
+            NavigationLink(destination: nextView(item: item).environmentObject(appState)) {
+                HStack {
+                    if let url = item.imageURL(server: appState.server) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 200, height: 150)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            case .failure:
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 200, height: 150)
+                                    .foregroundColor(.gray)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                        .frame(width: 200, height: 150)
+                    } else {
+                        Image(systemName: "photo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 200, height: 150)
+                            .foregroundColor(.gray)
+                    }
+                    Text(item.name)
+                        .font(.title2)
+                        .dynamicTypeSize(.xSmall)
+                }.padding(.vertical, 5)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    func nextView(item: BaseItem) -> some View {
+        if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
+            CollectionView(item: item)
+        } else if item.type == .series {
+            SeriesView(series: item)
+        } else {
+            DetailView(movieID: item.id)
+        }
+    }
+}
+
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel: RootViewController
@@ -41,7 +102,7 @@ struct RootView: View {
     var body: some View {
         NavigationStack {
             List(viewModel.items, id: \.id) { item in
-                Text(item.name)
+                RootViewItemView(item: item, appState: appState).frame(height: 150)
             }.onAppear {
                 showAuthSheet = !appState.isAuthenticated
                 Task {

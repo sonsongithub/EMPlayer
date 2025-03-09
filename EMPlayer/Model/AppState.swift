@@ -33,6 +33,13 @@ class AppState: ObservableObject {
         loadFromUserDefaults()
     }
     
+    init(server: String, token: String, userID: String, isAuthenticated: Bool) {
+        self.server = server
+        self.token = token
+        self.userID = userID
+        self.isAuthenticated = isAuthenticated
+    }
+    
     func get() throws -> (String, String, String) {
         guard let server = server, let token = token, let userID = userID else {
             throw AppStateError.notReady

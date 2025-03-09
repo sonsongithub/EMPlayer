@@ -21,19 +21,21 @@ struct LoginToServerView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("ログイン")
+            Text("Login")
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            TextField("サーバ名", text: $serverName)
+            TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .autocapitalization(.none)
+                .textContentType(.none)
+                .foregroundColor(.primary)
+
+            TextField("User name", text: $username)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .autocapitalization(.none)
 
-            TextField("アカウント", text: $username)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .autocapitalization(.none)
-
-            SecureField("パスワード", text: $password)
+            SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
 
             if let error = loginError {
@@ -45,7 +47,7 @@ struct LoginToServerView: View {
                 if isLoggingIn {
                     ProgressView()
                 } else {
-                    Text("ログイン")
+                    Text("login")
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -82,3 +84,12 @@ struct LoginToServerView: View {
         }
     }
 }
+
+#Preview {
+    let accountManager = AccountManager()
+    let appState = AppState()
+    return LoginToServerView()
+        .environmentObject(accountManager)
+        .environmentObject(appState)
+}
+

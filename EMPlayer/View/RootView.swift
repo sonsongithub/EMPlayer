@@ -32,7 +32,7 @@ class RootViewController: ObservableObject {
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel: RootViewController
-    @State private var showAuthSheet = true
+    @State private var showAuthSheet = false
     
     init(appState: AppState) {
         _viewModel = StateObject(wrappedValue: RootViewController(appState: appState))
@@ -43,6 +43,7 @@ struct RootView: View {
             List(viewModel.items, id: \.id) { item in
                 Text(item.name)
             }.onAppear {
+                showAuthSheet = !appState.isAuthenticated
                 Task {
                     await viewModel.fetch()
                 }
@@ -74,5 +75,6 @@ struct RootView: View {
 }
 
 #Preview {
-    RootView(appState: AppState())
+    let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
+    RootView(appState: appState).environmentObject(appState)
 }

@@ -28,13 +28,14 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
     var udpSocket: GCDAsyncUdpSocket!
 
     override init() {
-        print(#function)
+        print("ServerDiscoveryModel init")
         super.init()
         setupSocket()
         sendBroadcastMessage()
     }
 
     deinit {
+        print("ServerDiscoveryModel deinit")
         udpSocket.close()
     }
     

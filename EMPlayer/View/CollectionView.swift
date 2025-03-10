@@ -167,5 +167,5 @@ struct CollectionView: View {
 
 #Preview {
     CollectionItemView(item: BaseItem.dummy, appState: AppState())
-        .frame(width: 200, height: 320) // View自体のサイズを制限
+        .frame(width: 200, height: 320)
 }

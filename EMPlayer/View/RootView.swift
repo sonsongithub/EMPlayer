@@ -40,7 +40,7 @@ struct RootViewItemView: View {
     let height = CGFloat(150)
     var body: some View {
         GeometryReader { geometry in
-            NavigationLink(destination: nextView(item: item).environmentObject(appState)) {
+            NavigationLink(destination: item.nextView(appState: appState)) {
                 HStack {
                     if let url = item.imageURL(server: appState.server) {
                         AsyncImage(url: url) { phase in
@@ -76,18 +76,6 @@ struct RootViewItemView: View {
                         .dynamicTypeSize(.xSmall)
                 }.padding(.vertical, 5)
             }
-        }
-    }
-    
-    @ViewBuilder
-    func nextView(item: BaseItem) -> some View {
-        if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
-            let controller = CollectionViewController(currentItem: item, appState: appState)
-            CollectionView(controller: controller)
-        } else if item.type == .series {
-            SeriesView(series: item)
-        } else {
-            DetailView(movieID: item.id)
         }
     }
 }

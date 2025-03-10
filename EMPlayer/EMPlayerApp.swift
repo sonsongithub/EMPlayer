@@ -9,12 +9,10 @@ import SwiftUI
 
 @main
 struct EMPlayerApp: App {
-    
     let appState = AppState()
-    
     var body: some Scene {
         WindowGroup {
-            RootView(appState: self.appState).environmentObject(appState)
+            RootView(rootViewController: RootViewController(appState: appState)).environmentObject(appState)
         }
     }
 }

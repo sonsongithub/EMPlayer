@@ -229,45 +229,6 @@ struct HorizontalSeasonView: View {
     }
 }
 
-//struct HorizontalSeasonView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        ScrollView {
-//            VStack {
-//                HorizontalSeasonView(season: BaseItem.dummy)
-//                HorizontalSeasonView(season: BaseItem.dummy)
-//                HorizontalSeasonView(season: BaseItem.dummy)
-//            }
-//        }
-//    }
-//}
-
-struct SeriesView: View {
-    @EnvironmentObject var appState: AppState
-    let series: BaseItem
-    
-    @ObservedObject var contentModel = EmbySeriesModel()
-    
-    var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(spacing: 20) {
-                ForEach(contentModel.seasons, id: \.id) { season in
-                    HorizontalSeasonView(season: season)
-                        .environmentObject(appState)
-                }
-            }
-        }
-        .onAppear {
-            
-            contentModel.own = series
-            if let server = appState.server, let token = appState.token, let userID = appState.userID {
-                contentModel.get2(server: server, token: token, userID: userID, parentID: series.id, parent: self.series) { success, string in
-                    // update seasons
-                }
-            }
-        }
-    }
-}
-
 struct HorizontalSeasonEpisodeView: View {
     @EnvironmentObject var appState: AppState
     let item: BaseItem
@@ -310,6 +271,32 @@ struct HorizontalSeasonEpisodeView: View {
                 Text(item.overview ?? "?????")
                     .font(.title3)
                     .dynamicTypeSize(.medium)
+            }
+        }
+    }
+}
+
+struct SeriesView: View {
+    @EnvironmentObject var appState: AppState
+    let series: BaseItem
+    
+    @ObservedObject var contentModel = EmbySeriesModel()
+    
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 20) {
+                ForEach(contentModel.seasons, id: \.id) { season in
+                    HorizontalSeasonView(season: season)
+                        .environmentObject(appState)
+                }
+            }
+        }
+        .onAppear {
+            contentModel.own = series
+            if let server = appState.server, let token = appState.token, let userID = appState.userID {
+                contentModel.get2(server: server, token: token, userID: userID, parentID: series.id, parent: self.series) { success, string in
+                    // update seasons
+                }
             }
         }
     }

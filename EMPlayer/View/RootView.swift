@@ -26,6 +26,7 @@ class RootViewController: ObservableObject {
             let (server, token, userID) = try appState.get()
             self.items = try await apiClient.fetchUserView(server: server, userID: userID, token: token)
         } catch {
+            self.appState.logout()
             print(error)
         }
     }
@@ -81,7 +82,8 @@ struct RootViewItemView: View {
     @ViewBuilder
     func nextView(item: BaseItem) -> some View {
         if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
-            CollectionView(item: item, appState: appState)
+            let controller = CollectionViewController(currentItem: item, appState: appState)
+            CollectionView(controller: controller)
         } else if item.type == .series {
             SeriesView(series: item)
         } else {
@@ -92,21 +94,21 @@ struct RootViewItemView: View {
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var viewModel: RootViewController
+    @StateObject private var viewController: RootViewController
     @State private var showAuthSheet = false
     
-    init(appState: AppState) {
-        _viewModel = StateObject(wrappedValue: RootViewController(appState: appState))
+    init(rootViewController: RootViewController) {
+        _viewController = StateObject(wrappedValue: rootViewController)
     }
     
     var body: some View {
         NavigationStack {
-            List(viewModel.items, id: \.id) { item in
+            List(viewController.items, id: \.id) { item in
                 RootViewItemView(item: item, appState: appState).frame(height: 150)
             }.onAppear {
                 showAuthSheet = !appState.isAuthenticated
                 Task {
-                    await viewModel.fetch()
+                    await viewController.fetch()
                 }
             }
             .sheet(isPresented: $showAuthSheet) {
@@ -116,7 +118,7 @@ struct RootView: View {
                 showAuthSheet = !appState.isAuthenticated
                 if appState.isAuthenticated {
                     Task {
-                        await viewModel.fetch()
+                        await viewController.fetch()
                     }
                 }
             }
@@ -137,5 +139,6 @@ struct RootView: View {
 
 #Preview {
     let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
-    RootView(appState: appState).environmentObject(appState)
+    let rootViewController = RootViewController(appState: appState)
+    RootView(rootViewController: rootViewController).environmentObject(appState)
 }

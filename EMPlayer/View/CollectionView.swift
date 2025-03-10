@@ -9,8 +9,10 @@ import SwiftUI
 
 class CollectionViewController: ObservableObject {
     
+    let currentItem: BaseItem
+    
     static func forPreivew(appState: AppState) -> CollectionViewController {
-        let con = CollectionViewController(appState: appState)
+        let con = CollectionViewController(currentItem: BaseItem.dummy, appState: appState)
         for _ in (0..<20) {
             con.items.append(BaseItem.dummy)
         }
@@ -22,7 +24,8 @@ class CollectionViewController: ObservableObject {
     
     @Published var items: [BaseItem] = []
     
-    init(appState: AppState) {
+    init(currentItem: BaseItem, appState: AppState) {
+        self.currentItem = currentItem
         self.appState = appState
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             self.items = [BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy]
@@ -30,10 +33,10 @@ class CollectionViewController: ObservableObject {
     }
     
     @MainActor
-    func fetch(with parent: BaseItem) async {
+    func fetch() async {
         do {
             let (server, token, userID) = try appState.get()
-            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: parent)
+            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
             DispatchQueue.main.async {
                 self.items = items
             }
@@ -92,7 +95,8 @@ struct CollectionItemView: View {
     @ViewBuilder
     func nextView(item: BaseItem) -> some View {
         if item.type == .collectionFolder || item.type == .boxSet || item.type == .season {
-            CollectionView(item: item, appState: appState)
+            let controller = CollectionViewController(currentItem: item, appState: appState)
+            CollectionView(controller: controller)
         } else if item.type == .series {
             SeriesView(series: item).environmentObject(appState)
         } else {
@@ -134,19 +138,12 @@ struct CollectionView: View {
     
     @EnvironmentObject var appState: AppState
     
-    let item: BaseItem
     @StateObject private var controller: CollectionViewController
     
-    init(item: BaseItem, appState: AppState) {
-        self.item = item
-        _controller = StateObject(wrappedValue: CollectionViewController(appState: appState))
-    }
-    
-    init(item: BaseItem, controller: CollectionViewController) {
-        self.item = item
+    init(controller: CollectionViewController) {
         _controller = StateObject(wrappedValue: controller)
     }
-     
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -167,17 +164,17 @@ struct CollectionView: View {
         }
         .onAppear {
             Task {
-                await controller.fetch(with: item)
+                await controller.fetch()
             }
         }
-        .navigationTitle(item.name)
+        .navigationTitle(controller.currentItem.name)
     }
 }
 
 #Preview {
     let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
     let controller = CollectionViewController.forPreivew(appState: appState)
-    CollectionView(item: BaseItem.dummy, controller: controller).environmentObject(appState)
+    CollectionView(controller: controller).environmentObject(appState)
 }
 
 #Preview {

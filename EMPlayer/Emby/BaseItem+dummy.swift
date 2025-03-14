@@ -37,11 +37,10 @@ extension BaseItem {
                                       collectionType: nil)
     
     func imageURL(server: String?) -> URL? {
-        if let _ = imageTags?.primary, let server = server {
-            return URL(string: "\(server)/Items/\(self.id)/Images/Primary")!
-        }
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return URL(string: "https://media.themoviedb.org/t/p/w600_and_h900_bestv2/11XJ0CUYn06Mht3qeGKJfVuWnYP.jpg")!
+            return URL(string: "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTSFIR8C4EqpjhnYLI070qP1J7vUVa7-c0aCKVRdj7bnoWpbiv50y1zwPepr7V-Z_LZNZRoYA")!
+        } else if let _ = imageTags?.primary, let server = server {
+            return URL(string: "\(server)/Items/\(self.id)/Images/Primary")!
         }
         return nil
     }

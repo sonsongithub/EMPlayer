@@ -189,7 +189,7 @@ struct BaseItem: Codable {
             let controller = CollectionViewController(currentItem: self, appState: appState)
             CollectionView(controller: controller).environmentObject(appState)
         } else if self.type == .series {
-            let controller = EmbySeriesModel(currentItem: self, appState: appState)
+            let controller = SeriesViewController(currentItem: self, appState: appState)
             SeriesView(controller: controller).environmentObject(appState)
         } else {
             DetailView(movieID: self.id).environmentObject(appState)

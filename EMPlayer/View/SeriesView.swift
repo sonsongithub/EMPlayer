@@ -37,6 +37,7 @@ class SeriesViewController: ObservableObject {
     @Published var seasons: [SeriesInfo] = []
     let appState: AppState
     private let apiClient = APIClient()
+    var isLoaded = false
     
     init(currentItem: BaseItem, appState: AppState) {
         self.currentItem = currentItem
@@ -51,6 +52,7 @@ class SeriesViewController: ObservableObject {
     
     @MainActor
     func fetch() async {
+        guard self.isLoaded == false else { return }
         do {
             let (server, token, userID) = try appState.get()
             
@@ -93,6 +95,7 @@ class SeriesViewController: ObservableObject {
             }
             self.seasons = seasonResults
             self.seasons.forEach { $0.sortEpisodes() }
+            self.isLoaded = true
         } catch {
             print(error)
         }
@@ -128,6 +131,11 @@ struct SeasonView: View {
     let width: CGFloat
     let hidesSeasonTitle: Bool
     
+    func nextMoviePreview(item: BaseItem) -> some View {
+        let controller = MoviePreviewController(currentItem: item, appState: appState)
+        return MoviePreview(controller: controller).environmentObject(appState)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 25) {
             if !hidesSeasonTitle {
@@ -137,34 +145,56 @@ struct SeasonView: View {
             }
             ForEach(season.episodes, id: \.id) { episode in
                 HStack(spacing: 20) {
-                    if let imageURL = episode.imageURL(server: appState.server) {
-                        AsyncImage(url: imageURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable()
-                                    .scaledToFill()
-                                    .cornerRadius(8)
-                            default:
-                                Color.gray
+                    ZStack {
+                        if let imageURL = episode.imageURL(server: appState.server) {
+                            AsyncImage(url: imageURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable()
+                                        .scaledToFill()
+                                        .cornerRadius(8)
+                                default:
+                                    Color.gray
+                                }
                             }
+                            .frame(width: width * 0.2, height: width * 0.2 / 16 * 9)
+                            .cornerRadius(8)
                         }
-                        .frame(width: width * 0.2, height: width * 0.2 / 16 * 9)                        .cornerRadius(8)
+
+                        // 再生ボタン（画像の中央に重ねる）
+                        NavigationLink(destination: nextMoviePreview(item: episode)) {
+                            Image(systemName: "play.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 25, height: 25)
+                                .foregroundColor(.white)
+                                .shadow(radius: 5)
+                        }
                     }
-                    VStack(alignment: .leading) {
-                        if let indexNumber = episode.indexNumber {
-                            Text("\(indexNumber). \(episode.name)")
-                                .font(.title)
-                        } else {
-                            Text(episode.name)
-                                .font(.title)
+                    
+                    NavigationLink(destination: nextMoviePreview(item: episode)) {
+                        VStack(alignment: .leading) {
+                            if let indexNumber = episode.indexNumber {
+                                Text("\(indexNumber). \(episode.name)")
+                                    .font(.title)
+                            } else {
+                                Text(episode.name)
+                                    .font(.title)
+                            }
+                            
+                            // overviewをタップすると MoviePreview を開く
+                            Text(episode.overview ?? "")
+                                .foregroundColor(.blue)
+                            
+                            Spacer()
                         }
-                        Text(episode.overview ?? "")
-                        Spacer()
-                    }.frame(height: width * 0.2 / 16 * 9)
+                    }
+                    .frame(height: width * 0.2 / 16 * 9)
                 }
                 .padding(.horizontal, 10)
             }
-        }.padding(.bottom, 40)
+        }
+        .padding(.bottom, 40)
     }
 }
 
@@ -177,19 +207,22 @@ struct SeriesView: View {
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 20) {
-                    Text(contentModel.currentItem.overview ?? "")
-                    ForEach(contentModel.seasons) { season in
-                        SeasonView(season: season, width: proxy.size.width, hidesSeasonTitle: (contentModel.seasons.count <= 1)).environmentObject(appState)
+        NavigationStack {
+            GeometryReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 20) {
+                        Text(contentModel.currentItem.overview ?? "")
+                        ForEach(contentModel.seasons) { season in
+                            SeasonView(season: season, width: proxy.size.width, hidesSeasonTitle: (contentModel.seasons.count <= 1)).environmentObject(appState)
+                        }
                     }
-                }
-                .padding(.top)
-                .padding(.horizontal)
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top)
+                    .padding(.horizontal)
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .onAppear {
+            print("onAppear")
             Task {
                 await contentModel.fetch()
             }

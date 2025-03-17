@@ -35,6 +35,16 @@ struct AuthenticationView: View {
                         isPresented = false
                     }
                 }
+            
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            }
         }
     }
 }

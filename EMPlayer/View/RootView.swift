@@ -94,16 +94,14 @@ struct RootView: View {
             List(viewController.items, id: \.id) { item in
                 RootViewItemView(item: item, appState: appState).frame(height: 150)
             }.onAppear {
-                showAuthSheet = !appState.isAuthenticated
                 Task {
                     await viewController.fetch()
                 }
             }
             .sheet(isPresented: $showAuthSheet) {
-                AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState).interactiveDismissDisabled(true)
+                AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
             }
             .onChange(of: appState.isAuthenticated) {
-                showAuthSheet = !appState.isAuthenticated
                 if appState.isAuthenticated {
                     Task {
                         await viewController.fetch()
@@ -114,7 +112,7 @@ struct RootView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
-                        appState.isAuthenticated = false
+                        self.showAuthSheet = true
                     }) {
                         Image(systemName: "person.crop.circle")
                     }

@@ -19,7 +19,7 @@ extension BaseItem {
                                       sourceType: nil,
                                       hasSubtitle: nil,
                                       path: nil,
-                                      overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                                      overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                                       aspectRatio: nil,
                                       isHD: nil,
                                       seriesId: nil,

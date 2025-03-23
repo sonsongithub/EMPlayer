@@ -125,6 +125,151 @@ class SeriesViewController: ObservableObject {
     }
 }
 
+struct EpisodeView: View {
+    @EnvironmentObject var appState: AppState
+    @ObservedObject var season: SeriesInfo
+    
+    let episode: BaseItem
+    let width: CGFloat
+    @State private var isExpanded = false
+    
+    func nextMoviePreview(item: BaseItem) -> some View {
+        let controller = MoviePreviewController(currentItem: item, appState: appState)
+        return MoviePreview(controller: controller).environmentObject(appState)
+    }
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            ZStack {
+                if let imageURL = episode.imageURL(server: appState.server) {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable()
+                                .scaledToFill()
+                                .cornerRadius(8)
+                        default:
+                            Color.gray
+                        }
+                    }
+                    .frame(width: width * 0.2, height: width * 0.2 / 16 * 9)
+                    .cornerRadius(8)
+                }
+
+                // 再生ボタン（画像の中央に重ねる）
+                NavigationLink(destination: nextMoviePreview(item: episode)) {
+                    Image(systemName: "play.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: width * 0.2 * 0.3, height: width * 0.2 * 0.3)
+                        .foregroundColor(.white)
+                        .shadow(radius: 5)
+                }
+            }
+            VStack(alignment: .leading) {
+                NavigationLink(destination: nextMoviePreview(item: episode)) {
+                    if let indexNumber = episode.indexNumber {
+                        Text("\(indexNumber). \(episode.name)")
+                            .font(.title)
+                            .foregroundColor(.black)
+                    } else {
+                        Text(episode.name)
+                            .font(.title)
+                            .foregroundColor(.black)
+                    }
+                }
+                
+                if let overview = episode.overview {
+                    Text(overview)
+                    .lineLimit(isExpanded ? nil : 3)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.black)
+                    .onTapGesture {
+                        isExpanded.toggle()
+                    }
+                    .animation(.easeInOut, value: isExpanded)
+                } else {
+                }
+                Spacer()
+            }
+            .frame(height: width * 0.2 / 16 * 9)
+        }
+        .padding(.horizontal, 10)
+    }
+}
+
+struct EpisodeSmallView: View {
+    @EnvironmentObject var appState: AppState
+    @ObservedObject var season: SeriesInfo
+    
+    let episode: BaseItem
+    let width: CGFloat
+    @State private var isExpanded = false
+    
+    func nextMoviePreview(item: BaseItem) -> some View {
+        let controller = MoviePreviewController(currentItem: item, appState: appState)
+        return MoviePreview(controller: controller).environmentObject(appState)
+    }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                if let imageURL = episode.imageURL(server: appState.server) {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable()
+                                .scaledToFill()
+                                .cornerRadius(8)
+                        default:
+                            Color.gray
+                        }
+                    }
+                    .cornerRadius(8)
+                }
+
+                // 再生ボタン（画像の中央に重ねる）
+                NavigationLink(destination: nextMoviePreview(item: episode)) {
+                    Image(systemName: "play.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: width * 0.3, height: width * 0.3)
+                        .foregroundColor(.white)
+                        .shadow(radius: 5)
+                }
+            }
+            
+            NavigationLink(destination: nextMoviePreview(item: episode)) {
+                VStack(alignment: .leading) {
+                    if let indexNumber = episode.indexNumber {
+                        Text("\(indexNumber). \(episode.name)")
+                            .font(.title)
+                            .foregroundColor(.black)
+                    } else {
+                        Text(episode.name)
+                            .font(.title)
+                            .foregroundColor(.black)
+                    }
+                    
+                    if let overview = episode.overview {
+                        Text(verbatim: overview)
+                        .lineLimit(isExpanded ? nil : 3)
+                        .multilineTextAlignment(.leading)
+                        .foregroundColor(.black)
+                        .onTapGesture {
+                            isExpanded.toggle()
+                        }
+                        .animation(.easeInOut, value: isExpanded)
+                    } else {
+                    }
+                    Spacer()
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+    }
+}
+
 struct SeasonView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject var season: SeriesInfo
@@ -144,54 +289,11 @@ struct SeasonView: View {
                     .bold()
             }
             ForEach(season.episodes, id: \.id) { episode in
-                HStack(spacing: 20) {
-                    ZStack {
-                        if let imageURL = episode.imageURL(server: appState.server) {
-                            AsyncImage(url: imageURL) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image.resizable()
-                                        .scaledToFill()
-                                        .cornerRadius(8)
-                                default:
-                                    Color.gray
-                                }
-                            }
-                            .frame(width: width * 0.2, height: width * 0.2 / 16 * 9)
-                            .cornerRadius(8)
-                        }
-
-                        // 再生ボタン（画像の中央に重ねる）
-                        NavigationLink(destination: nextMoviePreview(item: episode)) {
-                            Image(systemName: "play.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.white)
-                                .shadow(radius: 5)
-                        }
-                    }
-                    
-                    NavigationLink(destination: nextMoviePreview(item: episode)) {
-                        VStack(alignment: .leading) {
-                            if let indexNumber = episode.indexNumber {
-                                Text("\(indexNumber). \(episode.name)")
-                                    .font(.title)
-                            } else {
-                                Text(episode.name)
-                                    .font(.title)
-                            }
-                            
-                            // overviewをタップすると MoviePreview を開く
-                            Text(episode.overview ?? "")
-                                .foregroundColor(.blue)
-                            
-                            Spacer()
-                        }
-                    }
-                    .frame(height: width * 0.2 / 16 * 9)
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    EpisodeSmallView(season: season, episode: episode, width: width).environmentObject(appState)
+                } else {
+                    EpisodeView(season: season, episode: episode, width: width).environmentObject(appState)
                 }
-                .padding(.horizontal, 10)
             }
         }
         .padding(.bottom, 40)

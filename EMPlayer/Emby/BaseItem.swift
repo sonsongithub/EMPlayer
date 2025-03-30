@@ -192,7 +192,8 @@ struct BaseItem: Codable {
             let controller = SeriesViewController(currentItem: self, appState: appState)
             SeriesView(controller: controller).environmentObject(appState)
         } else {
-            DetailView(movieID: self.id).environmentObject(appState)
+            let controller = MovieViewController(currentItem: self, appState: appState)
+            MovieView(controller: controller).environmentObject(appState)
         }
     }
 }

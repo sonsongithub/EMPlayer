@@ -1,6 +1,15 @@
 {
-  "originHash" : "4d666467634c65db7100c4f841add6f1b33f016070afcef4d510836f0057d260",
+  "originHash" : "4c5b7b311f79de8ba501854595603004e87e855719cf3886fb5a40cdb4406643",
   "pins" : [
+    {
+      "identity" : "azvideoplayer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/adamzarn/AZVideoPlayer.git",
+      "state" : {
+        "revision" : "a5b2403a35d5768ee4af6c2d27ad9f9a6fb2a789",
+        "version" : "1.4.0"
+      }
+    },
     {
       "identity" : "cocoaasyncsocket",
       "kind" : "remoteSourceControl",

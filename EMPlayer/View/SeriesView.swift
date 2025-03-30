@@ -138,6 +138,11 @@ struct EpisodeView: View {
         return MoviePreview(controller: controller).environmentObject(appState)
     }
     
+    func nextMovieView(item: BaseItem) -> some View {
+        let controller = MovieViewController(currentItem: item, appState: appState)
+        return MovieView(controller: controller).environmentObject(appState)
+    }
+    
     var body: some View {
         HStack(spacing: 20) {
             ZStack {
@@ -157,7 +162,7 @@ struct EpisodeView: View {
                 }
 
                 // 再生ボタン（画像の中央に重ねる）
-                NavigationLink(destination: nextMoviePreview(item: episode)) {
+                NavigationLink(destination: nextMovieView(item: episode)) {
                     Image(systemName: "play.circle.fill")
                         .resizable()
                         .scaledToFit()
@@ -211,6 +216,11 @@ struct EpisodeSmallView: View {
         return MoviePreview(controller: controller).environmentObject(appState)
     }
     
+    func nextMovieView(item: BaseItem) -> some View {
+        let controller = MovieViewController(currentItem: item, appState: appState)
+        return MovieView(controller: controller).environmentObject(appState)
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
             ZStack {
@@ -229,7 +239,7 @@ struct EpisodeSmallView: View {
                 }
 
                 // 再生ボタン（画像の中央に重ねる）
-                NavigationLink(destination: nextMoviePreview(item: episode)) {
+                NavigationLink(destination: nextMovieView(item: episode)) {
                     Image(systemName: "play.circle.fill")
                         .resizable()
                         .scaledToFit()

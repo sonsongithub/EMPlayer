@@ -12,6 +12,7 @@ enum APIClientError: Error {
     case cannotCreateURL
     case tokenIsNil
     case unauthorized
+    case invalidURL
 }
 
 class APIClient {

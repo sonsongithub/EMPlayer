@@ -9,6 +9,8 @@ import os
 import AppKit
 #endif
 
+// MARK: - PlayerViewModel
+
 class PlayerViewModel: ObservableObject {
     @Published var isPlaying: Bool = false
     @Published var currentTime: Double = 0.0
@@ -17,6 +19,10 @@ class PlayerViewModel: ObservableObject {
         didSet { player?.volume = volume }
     }
     @Published var showControls: Bool = true
+    @Published var isSeeking: Bool = false
+    @Published var isReady: Bool = false
+    @Published var isLoading: Bool = false
+    @Published var hasError: Bool = false
 
     var player: AVPlayer?
     var playerItem: AVPlayerItem? {
@@ -24,6 +30,13 @@ class PlayerViewModel: ObservableObject {
             if let item = playerItem {
                 player = AVPlayer(playerItem: item)
                 setupPlayer()
+                isReady = true
+                isLoading = false
+                hasError = false
+            } else {
+                isReady = false
+                isLoading = false
+                hasError = true
             }
         }
     }
@@ -37,25 +50,52 @@ class PlayerViewModel: ObservableObject {
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)
         }
+#if targetEnvironment(macCatalyst)
+        NSCursor.unhide()
+#endif
         stopTimer()
     }
 
     private func setupPlayer() {
         guard let player = player, let asset = player.currentItem?.asset else { return }
 
-        asset.loadValuesAsynchronously(forKeys: ["duration"]) {
-            var durationSeconds = CMTimeGetSeconds(asset.duration)
-            if durationSeconds.isNaN || durationSeconds.isInfinite {
-                durationSeconds = 1.0
+        // Remove existing observer if any
+        if let token = timeObserverToken {
+            player.removeTimeObserver(token)
+            timeObserverToken = nil
+        }
+
+        // Load duration
+        if #available(iOS 16.0, macCatalyst 16.0, *) {
+            Task {
+                do {
+                    let loadedDuration = try await asset.load(.duration)
+                    let seconds = CMTimeGetSeconds(loadedDuration)
+                    await MainActor.run {
+                        self.duration = seconds.isFinite ? seconds : 1.0
+                    }
+                } catch {
+                    print("Failed to load duration: \(error)")
+                }
             }
-            DispatchQueue.main.async {
-                self.duration = durationSeconds
+        } else {
+            asset.loadValuesAsynchronously(forKeys: ["duration"]) {
+                let seconds = CMTimeGetSeconds(asset.duration)
+                DispatchQueue.main.async {
+                    self.duration = seconds.isFinite ? seconds : 1.0
+                }
             }
         }
 
-        timeObserverToken = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] time in
+        // Add time observer
+        timeObserverToken = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.2, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self] time in
             guard let self = self else { return }
-            self.currentTime = CMTimeGetSeconds(time)
+            if !self.isSeeking {
+                self.currentTime = CMTimeGetSeconds(time)
+            }
             self.isPlaying = self.player?.rate != 0
         }
     }
@@ -79,25 +119,19 @@ class PlayerViewModel: ObservableObject {
         lastInteractionTime = Date()
         showControls = true
 #if targetEnvironment(macCatalyst)
-        if isCursorHidden {
-            isCursorHidden = false
-            NSCursor.unhide()
-        }
+        NSCursor.unhide()
 #endif
     }
 
     func checkInteractionTimeout() {
-        print("Checking interaction timeout")
+        guard isReady else { return }
         let elapsed = Date().timeIntervalSince(lastInteractionTime)
         let isCurrentlyPlaying = player?.rate != 0
 
         if showControls && isCurrentlyPlaying && elapsed > 3.0 {
             showControls = false
 #if targetEnvironment(macCatalyst)
-            if !isCursorHidden {
-                isCursorHidden = true
-                NSCursor.hide()
-            }
+            NSCursor.hide()
 #endif
         }
     }
@@ -118,6 +152,58 @@ class PlayerViewModel: ObservableObject {
         interactionTimer = nil
     }
 }
+
+struct CustomSeekBar: View {
+    @Binding var value: Double
+    var max: Double
+    var onSeekFinished: ((Double) -> Void)? = nil
+    var knobSize: CGSize = CGSize(width: 30, height: 30)
+    var isSeeking: Binding<Bool>? = nil
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let knobRadius = knobSize.width / 2
+            let safeMinX = knobRadius
+            let safeMaxX = width - knobRadius
+            let knobX = safeMinX + (safeMaxX - safeMinX) * CGFloat(value / max)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.gray)
+                    .frame(height: 4)
+
+                Capsule()
+                    .fill(Color.white)
+                    .frame(width: knobX, height: 4)
+
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: knobSize.width, height: knobSize.height)
+                    .position(x: knobX, y: knobSize.height / 2)
+            }
+            .contentShape(Rectangle().inset(by: -knobRadius))
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        isSeeking?.wrappedValue = true
+                        let location = gesture.location.x
+                        let ratio = min(Swift.max((location - safeMinX) / (safeMaxX - safeMinX), 0), 1)
+                        self.value = ratio * max
+                    }
+                    .onEnded { gesture in
+                        isSeeking?.wrappedValue = false
+                        let location = gesture.location.x
+                        let ratio = min(Swift.max((location - safeMinX) / (safeMaxX - safeMinX), 0), 1)
+                        self.value = ratio * max
+                        onSeekFinished?(value)
+                    }
+            )
+        }
+        .frame(height: knobSize.height)
+    }
+}
+
 
 // MARK: - CatalystMouseMoveTracker
 
@@ -169,50 +255,6 @@ struct AVPlayerView: UIViewControllerRepresentable {
     }
 }
 
-// MARK: - CustomSeekBar
-
-struct CustomSeekBar: View {
-    @Binding var value: Double
-    var max: Double
-    var onSeekFinished: ((Double) -> Void)? = nil
-    var knobSize: CGSize = CGSize(width: 30, height: 30)
-
-    var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
-            let knobRadius = knobSize.width / 2
-            let safeMinX = knobRadius
-            let safeMaxX = width - knobRadius
-            let knobX = safeMinX + (safeMaxX - safeMinX) * CGFloat(value / max)
-
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.gray).frame(height: 4)
-                Capsule().fill(Color.white).frame(width: knobX, height: 4)
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: knobSize.width, height: knobSize.height)
-                    .position(x: knobX, y: knobSize.height / 2)
-            }
-            .contentShape(Rectangle().inset(by: -knobRadius))
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let location = gesture.location.x
-                        let ratio = min(Swift.max((location - safeMinX) / (safeMaxX - safeMinX), 0), 1)
-                        self.value = ratio * max
-                    }
-                    .onEnded { gesture in
-                        let location = gesture.location.x
-                        let ratio = min(Swift.max((location - safeMinX) / (safeMaxX - safeMinX), 0), 1)
-                        self.value = ratio * max
-                        onSeekFinished?(value)
-                    }
-            )
-        }
-        .frame(height: knobSize.height)
-    }
-}
-
 struct PlaybackControlsView: View {
     @ObservedObject var viewModel: PlayerViewModel
 
@@ -231,10 +273,13 @@ struct PlaybackControlsView: View {
             }
 
             HStack {
-                CustomSeekBar(value: $viewModel.currentTime, max: viewModel.duration) { newTime in
-                    viewModel.seek(to: newTime)
-                    viewModel.resetInteraction()
-                }
+                CustomSeekBar(value: $viewModel.currentTime, max: viewModel.duration,
+                onSeekFinished: { newTime in
+                        viewModel.seek(to: newTime)
+                        viewModel.resetInteraction()
+                    },
+                    isSeeking: $viewModel.isSeeking
+                )
             }.padding(.horizontal)
 
             HStack {
@@ -261,23 +306,33 @@ struct CustomVideoPlayerView: View {
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            if let player = viewModel.player {
-                AVPlayerView(player: player)
-            }
-
-            if !viewModel.showControls {
-#if targetEnvironment(macCatalyst)
-                CatalystMouseMoveTracker {
-                    viewModel.resetInteraction()
+            if viewModel.isLoading {
+                ProgressView("Loading...").progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+            } else if viewModel.hasError {
+                Text("Can not load movie.").foregroundColor(.white).background(Color.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding()
+                    .multilineTextAlignment(.center)
+            } else {
+                if let player = viewModel.player {
+                    AVPlayerView(player: player)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-#endif
-            }
-
-            if viewModel.showControls {
-                VStack {
-                    Spacer()
-                    PlaybackControlsView(viewModel: viewModel)
+                if !viewModel.showControls {
+    #if targetEnvironment(macCatalyst)
+                    CatalystMouseMoveTracker {
+                        viewModel.resetInteraction()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    #endif
+                }
+                if viewModel.showControls {
+                    VStack {
+                        Spacer()
+                        PlaybackControlsView(viewModel: viewModel)
+                    }
                 }
             }
         }
@@ -287,16 +342,21 @@ struct CustomVideoPlayerView: View {
         .navigationBarHidden(!viewModel.showControls)
         .ignoresSafeArea(edges: .vertical)
         .safeAreaInset(edge: .top) {
-            if viewModel.showControls {
-                HStack(spacing: 6) {
-                    Spacer()
-                    Image(systemName: "speaker.fill").foregroundColor(.white)
-                    CustomSeekBar(
-                        value: Binding(get: { Double(viewModel.volume) }, set: { viewModel.volume = Float($0) }),
-                        max: 1.0
-                    ).frame(width: 120, height: 20)
-                    Image(systemName: "speaker.wave.3.fill").foregroundColor(.white)
-                }.padding(.top).padding(.trailing, 16)
+            
+            if viewModel.isLoading {
+            } else if viewModel.hasError {
+            } else {
+                if viewModel.showControls {
+                    HStack(spacing: 6) {
+                        Spacer()
+                        Image(systemName: "speaker.fill").foregroundColor(.white)
+                        CustomSeekBar(
+                            value: Binding(get: { Double(viewModel.volume) }, set: { viewModel.volume = Float($0) }),
+                            max: 1.0
+                        ).frame(width: 120, height: 20)
+                        Image(systemName: "speaker.wave.3.fill").foregroundColor(.white)
+                    }.padding(.top).padding(.trailing, 16)
+                }
             }
         }
         .background(Color.black)
@@ -304,6 +364,10 @@ struct CustomVideoPlayerView: View {
             viewModel.stopTimer()
             viewModel.player?.pause()
             viewModel.player?.replaceCurrentItem(with: nil)
+            
+    #if targetEnvironment(macCatalyst)
+            NSCursor.unhide()
+            #endif
         }.onAppear {
             viewModel.startTimer()
         }
@@ -333,19 +397,28 @@ class MovieViewController : PlayerViewModel {
     @MainActor
     func fetch() async {
         do {
+            self.isLoading = true
             let (server, token, userID) = try appState.get()
             let item = try await apiClient.fetchItemDetail(server: server, userID: userID, token: token, of: currentItem)
+            
+            // sleep for testing loading view
+//            try await Task.sleep(nanoseconds: 3_000_000_000)
+            
+            guard let url = self.currentItem.playableVideo(from: server) else {
+                throw APIClientError.invalidURL
+            }
             DispatchQueue.main.async {
                 self.currentItem = item
-                if let url = self.currentItem.playableVideo(from: server) {
-                    let headers = ["X-Emby-Token": token]
-                    let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
-                    self.playerItem = AVPlayerItem(asset: asset)
-                    self.player?.play()
-                    self.resetInteraction()
-                }
+                let headers = ["X-Emby-Token": token]
+                let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": headers])
+                self.playerItem = AVPlayerItem(asset: asset)
+                self.player?.play()
+                self.resetInteraction()
+                self.isLoading = false
             }
         } catch {
+            self.isLoading = false
+            self.hasError = true
             print(error)
         }
     }

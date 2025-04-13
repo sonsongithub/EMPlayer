@@ -26,6 +26,18 @@ struct LoginView: View {
     
     var body: some View {
         VStack {
+            #if os(tvOS)
+            Text("Login: \(String(describing: self.server))")
+                .font(.title2)
+                .padding()
+
+            TextField("Username", text: $username)
+                .padding()
+
+            SecureField("Password", text: $password)
+                .textContentType(.password)
+                .padding()
+            #else
             Text("Login: \(String(describing: self.server))")
                 .font(.title2)
                 .padding()
@@ -38,6 +50,7 @@ struct LoginView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .textContentType(.password)
                 .padding()
+            #endif
 
             if let errorMessage = errorMessage {
                 Text(errorMessage)

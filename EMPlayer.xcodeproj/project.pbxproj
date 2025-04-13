@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1491F4562D918B5600E5B668 /* AZVideoPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 1491F4552D918B5600E5B668 /* AZVideoPlayer */; };
 		14AD4F832D789785006BC534 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 14AD4F822D789785006BC534 /* KeychainAccess */; };
 		14F199602D6020DE0094FE11 /* CocoaAsyncSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 14F1995F2D6020DE0094FE11 /* CocoaAsyncSocket */; };
 /* End PBXBuildFile section */
@@ -31,7 +30,6 @@
 			files = (
 				14AD4F832D789785006BC534 /* KeychainAccess in Frameworks */,
 				14F199602D6020DE0094FE11 /* CocoaAsyncSocket in Frameworks */,
-				1491F4562D918B5600E5B668 /* AZVideoPlayer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,7 +74,6 @@
 			packageProductDependencies = (
 				14F1995F2D6020DE0094FE11 /* CocoaAsyncSocket */,
 				14AD4F822D789785006BC534 /* KeychainAccess */,
-				1491F4552D918B5600E5B668 /* AZVideoPlayer */,
 			);
 			productName = EMPlayer;
 			productReference = 14F199402D601A000094FE11 /* EMPlayer.app */;
@@ -110,7 +107,6 @@
 			packageReferences = (
 				14F1995E2D6020DE0094FE11 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */,
 				14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
-				1491F4542D918B5600E5B668 /* XCRemoteSwiftPackageReference "AZVideoPlayer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 14F199412D601A000094FE11 /* Products */;
@@ -292,11 +288,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.sonson.Emby;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				REGISTER_APP_GROUPS = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 			};
 			name = Debug;
 		};
@@ -328,11 +327,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.sonson.Emby;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				REGISTER_APP_GROUPS = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3";
 			};
 			name = Release;
 		};
@@ -360,14 +362,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		1491F4542D918B5600E5B668 /* XCRemoteSwiftPackageReference "AZVideoPlayer" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/adamzarn/AZVideoPlayer.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.4.0;
-			};
-		};
 		14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
@@ -387,11 +381,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		1491F4552D918B5600E5B668 /* AZVideoPlayer */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1491F4542D918B5600E5B668 /* XCRemoteSwiftPackageReference "AZVideoPlayer" */;
-			productName = AZVideoPlayer;
-		};
 		14AD4F822D789785006BC534 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 14AD4F812D789785006BC534 /* XCRemoteSwiftPackageReference "KeychainAccess" */;

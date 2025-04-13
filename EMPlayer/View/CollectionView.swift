@@ -119,11 +119,20 @@ extension Array {
 }
 
 struct CollectionView: View {
+    
+    #if os(tvOS)
+    let minWidth: CGFloat = 60  // カラムの最小幅
+    let maxWidth: CGFloat = 200  // カラムの最大幅
+    let horizontalSpacing: CGFloat = 40
+    let itemPerRow: CGFloat = 8
+    let space: CGFloat = 70
+    #else
     let minWidth: CGFloat = 60  // カラムの最小幅
     let maxWidth: CGFloat = 150  // カラムの最大幅
     let horizontalSpacing: CGFloat = 16
     let itemPerRow: CGFloat = 8
-    
+    let space: CGFloat = 8
+    #endif
     @EnvironmentObject var appState: AppState
     
     @StateObject private var controller: CollectionViewController
@@ -140,7 +149,7 @@ struct CollectionView: View {
                 let columnWidth = max(minWidth, (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow))
                 let height = floor(columnWidth * 10.0 / 7.0 + 10)
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: space) {
                         let rows = self.controller.items.chunked(into: itemPerRow)
                         ForEach(rows.indices, id: \.self) { rowIndex in
                             RowView(appState: appState, items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)

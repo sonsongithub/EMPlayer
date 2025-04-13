@@ -24,7 +24,19 @@ struct LoginToServerView: View {
             Text("Login")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+            
+            // target tvOS
+#if os(tvOS)
+            TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
+                .autocapitalization(.none)
+                .textContentType(.none)
+                .foregroundColor(.primary)
 
+            TextField("User name", text: $username)
+                .autocapitalization(.none)
+
+            SecureField("Password", text: $password)
+#else
             TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .autocapitalization(.none)
@@ -37,6 +49,7 @@ struct LoginToServerView: View {
 
             SecureField("Password", text: $password)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+#endif
 
             if let error = loginError {
                 Text(error)

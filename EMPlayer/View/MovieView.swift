@@ -42,7 +42,6 @@ class PlayerViewModel: ObservableObject {
     }
 
     private var lastInteractionTime = Date()
-    private var isCursorHidden = false
     private var timeObserverToken: Any?
     private var interactionTimer: DispatchSourceTimer?
 
@@ -59,13 +58,11 @@ class PlayerViewModel: ObservableObject {
     private func setupPlayer() {
         guard let player = player, let asset = player.currentItem?.asset else { return }
 
-        // Remove existing observer if any
         if let token = timeObserverToken {
             player.removeTimeObserver(token)
             timeObserverToken = nil
         }
 
-        // Load duration
         if #available(iOS 16.0, macCatalyst 16.0, *) {
             Task {
                 do {
@@ -87,7 +84,6 @@ class PlayerViewModel: ObservableObject {
             }
         }
 
-        // Add time observer
         timeObserverToken = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.2, preferredTimescale: 600),
             queue: .main
@@ -117,10 +113,12 @@ class PlayerViewModel: ObservableObject {
 
     func resetInteraction() {
         lastInteractionTime = Date()
-        showControls = true
+        withAnimation {
+            showControls = true
 #if targetEnvironment(macCatalyst)
-        NSCursor.unhide()
+            NSCursor.unhide()
 #endif
+        }
     }
 
     func checkInteractionTimeout() {
@@ -129,10 +127,12 @@ class PlayerViewModel: ObservableObject {
         let isCurrentlyPlaying = player?.rate != 0
 
         if showControls && isCurrentlyPlaying && elapsed > 3.0 {
-            showControls = false
+            withAnimation {
+                showControls = false
 #if targetEnvironment(macCatalyst)
-            NSCursor.hide()
+                NSCursor.hide()
 #endif
+            }
         }
     }
 

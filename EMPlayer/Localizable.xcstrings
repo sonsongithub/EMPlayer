@@ -65,7 +65,13 @@
     "Password" : {
 
     },
-    "Right Pane" : {
+    "Please enter a search query." : {
+
+    },
+    "Please login to a server." : {
+
+    },
+    "Search..." : {
 
     },
     "Select server" : {
@@ -84,6 +90,9 @@
 
     },
     "Video Player" : {
+
+    },
+    "検索..." : {
 
     }
   },

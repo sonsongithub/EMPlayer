@@ -59,22 +59,12 @@ struct LoginSheetView: View {
     }
     
     func login() {
-        
         guard let serverName = selectedServer?.address else { return }
-        
-        print(serverName)
-        
         Task {
             do {
-                print("try")
-                print(username)
-                print(password)
                 let authenticationResponse = try await self.apiClient.login(server: serverName, username: username, password: password)
-                print(authenticationResponse)
                 let account = Account(serverAddress: serverName, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
-                print(account)
                 DispatchQueue.main.async {
-                    print("try2")
                     self.accountManager.saveAccount(account)
                     self.appState.isAuthenticated = true
                     self.appState.userID = account.userID
@@ -85,7 +75,6 @@ struct LoginSheetView: View {
                     self.selectedServer = nil
                 }
             } catch {
-                print(error)
                 DispatchQueue.main.async {
 //                    self.isLoading = false
 //                    self.errorMessage = error.localizedDescription
@@ -121,6 +110,19 @@ class LeftPaneRootViewController: ObservableObject {
         }
     }
     
+    @MainActor
+    func getUserInfo(account: Account) async throws {
+        let user = try await self.apiClient.getUserInfo(server: account.serverAddress, userID: account.userID, token: account.token)
+        
+        if user.id == account.userID {
+            appState.server = account.serverAddress
+            appState.token = account.token
+            appState.userID = account.userID
+            appState.isAuthenticated = true
+        } else {
+            throw APIClientError.invalidUser
+        }
+    }
 }
 
 struct LeftPane: View {
@@ -132,6 +134,8 @@ struct LeftPane: View {
     
     @State private var selectedServer: ServerInfo? = nil
     @State private var showingLoginSheet = false
+    
+    @State private var searchQuery: String = ""
     
     let apiClient = APIClient()
     
@@ -158,17 +162,8 @@ struct LeftPane: View {
                             if let account = accountManager.accounts[name] {
                                 Task {
                                     do {
-                                        let user = try await self.apiClient.getUserInfo(server: account.serverAddress, userID: account.userID, token: account.token)
-                                        if user.id == account.userID {
-                                            appState.server = account.serverAddress
-                                            appState.token = account.token
-                                            appState.userID = account.userID
-                                            appState.isAuthenticated = true
-                                        } else {
-                                        //    showErrorAlert = true
-                                        }
+                                        try await controller.getUserInfo(account: account)
                                     } catch {
-                                        //showErrorAlert = true
                                         print(error)
                                     }
                                 }
@@ -178,10 +173,20 @@ struct LeftPane: View {
                 }
                 if appState.isAuthenticated {
                     Section(header: Text("Current Server")) {
+                        HStack {
+                                Image(systemName: "magnifyingglass")
+                                TextField("検索...", text: $searchQuery)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .onSubmit {
+                                        print("Searching for \(searchQuery)")
+                                        appState.searchQuery = searchQuery
+                                    }
+                                    
+                            }
                         ForEach(controller.items, id: \.id) { item in
                             Button(item.name) {
                                 // Handle item selection
-                                print("Selected item: \(item.name)")
+                                print("Selected     : \(item.name)")
                             }
                         }
                     }
@@ -194,7 +199,7 @@ struct LeftPane: View {
                 .environmentObject(accountManager)
                 .frame(minWidth: 400, minHeight: 300)
         }
-        .onChange(of: appState.server) { _ in
+        .onChange(of: appState.server) {
             if appState.isAuthenticated {
                 Task {
                     await controller.fetch()
@@ -202,10 +207,72 @@ struct LeftPane: View {
             }
         }
         // load content appstate is authenticated
-        .onChange(of: appState.isAuthenticated) { isAuthenticated in
-            if isAuthenticated {
+        .onChange(of: appState.isAuthenticated) {
+            if appState.isAuthenticated {
                 Task {
                     await controller.fetch()
+                }
+            }
+        }.frame(maxWidth: 400)
+    }
+}
+
+class SearchResultViewController: ObservableObject {
+    let appState: AppState
+    
+    let client = APIClient()
+    
+    @Published var items: [BaseItem] = []
+    
+    init(appState: AppState) {
+        self.appState = appState
+    }
+    
+    @MainActor
+    func fetch() async {
+        do {
+            print(appState.searchQuery)
+            if let query = appState.searchQuery {
+                let (server, token, userID) = try appState.get()
+                let items = try await client.searchItem(server: server, userID: userID, token: token, query: appState.searchQuery!)
+                DispatchQueue.main.async {
+                    self.items = items
+                    print("SearchResultViewController.fetch() \(items.count)")
+                }
+            }
+        } catch {
+            print(error)
+        }
+    }
+}
+            
+
+
+struct SearchResultView: View {
+    @EnvironmentObject var appState: AppState
+    @StateObject var controller: SearchResultViewController
+    
+    var body: some View {
+        if appState.searchQuery == nil {
+            Text("Please enter a search query.")
+                .padding()
+        } else {
+            if controller.items.isEmpty {
+                Text("Search...")
+                    .padding()
+                    .onAppear {
+                        Task {
+                            await controller.fetch()
+                        }
+                    }
+            } else {
+                List {
+                    ForEach(controller.items, id: \.id) { item in
+                        Button(item.name) {
+                            // Handle item selection
+                            print("Selected     : \(item.name)")
+                        }
+                    }
                 }
             }
         }
@@ -214,10 +281,13 @@ struct LeftPane: View {
 
 struct RightPane: View {
     @EnvironmentObject var appState: AppState
-    
+
     var body: some View {
-        VStack {
-            Text("Right Pane")
+        if appState.isAuthenticated {
+            SearchResultView(controller: SearchResultViewController(appState: appState))
+                .environmentObject(appState)
+        } else {
+            Text("Please login to a server.")
         }
     }
 }
@@ -238,7 +308,7 @@ struct MacOSRootView: View {
                     .environmentObject(appState)
                     .environmentObject(accountManager)
                     .environmentObject(serverDiscovery)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: 400, maxHeight: .infinity)
                     .listStyle(.sidebar)
                 RightPane()
                     .environmentObject(appState)

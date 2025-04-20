@@ -24,6 +24,9 @@ class AppState: ObservableObject {
     @Published var token: String?
     @Published var userID: String?
     @Published var isAuthenticated: Bool = false
+    
+    @Published var selectedItem: BaseItem? = nil
+    @Published var searchQuery: String? = nil
 
     init() {
         UserDefaults.standard.removeObject(forKey: "server")

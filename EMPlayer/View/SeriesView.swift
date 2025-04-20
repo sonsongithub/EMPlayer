@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+#if os(macOS)
+#else
+
 class SeriesInfo : Identifiable, ObservableObject {
     let id = UUID()
     let season: BaseItem
@@ -348,3 +351,5 @@ struct SeriesView: View {
     let con = SeriesViewController(currentItem: BaseItem.dummy, appState: appState, seasons: [SeriesInfo.dummy, SeriesInfo.dummy, SeriesInfo.dummy])
     SeriesView(controller: con).environmentObject(appState)
 }
+
+#endif

@@ -182,7 +182,8 @@ struct BaseItem: Codable {
             return nil
         }
     }
-    
+    #if os(macOS)
+    #else
     @ViewBuilder
     func nextView(appState: AppState) -> some View {
         if self.type == .collectionFolder || self.type == .boxSet || self.type == .season {
@@ -196,4 +197,5 @@ struct BaseItem: Codable {
             MovieView(controller: controller).environmentObject(appState)
         }
     }
+    #endif
 }

@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+#if os(macOS)
+#else
+
 struct LoginToServerView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
@@ -106,3 +109,4 @@ struct LoginToServerView: View {
         .environmentObject(appState)
 }
 
+#endif

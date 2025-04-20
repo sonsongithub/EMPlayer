@@ -8,6 +8,9 @@
 import SwiftUI
 import KeychainAccess
 
+#if os(macOS)
+#else
+
 struct ServerSelectionView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
@@ -97,3 +100,5 @@ struct ServerSelectionView: View {
     let appState = AppState()
     AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
 }
+
+#endif

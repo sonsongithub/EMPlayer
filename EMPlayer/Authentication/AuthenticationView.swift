@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+#if os(macOS)
+#else
+
 struct AuthenticationView: View {
     @EnvironmentObject var appState: AppState
     let accountManager = AccountManager()
@@ -54,3 +57,5 @@ struct AuthenticationView: View {
     let appState = AppState()
     AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
 }
+
+#endif

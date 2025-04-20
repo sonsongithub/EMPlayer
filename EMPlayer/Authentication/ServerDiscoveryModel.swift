@@ -24,7 +24,7 @@ struct ServerInfo: Codable, Identifiable, Hashable {
 }
 
 class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegate {
-    @Published var servers: [ServerInfo] = [ServerInfo(address: "192.168.64.2:8096", id: "1", name: "Emby Server")]
+    @Published var servers: [ServerInfo] = []//[ServerInfo(address: "192.168.64.2:8096", id: "1", name: "Emby Server")]
     var udpSocket: GCDAsyncUdpSocket!
 
     override init() {
@@ -56,8 +56,6 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
         print(#function)
         self.servers.removeAll()
         
-        self.servers.append(ServerInfo(address: "http://192.168.64.2:8096", id: "1", name: "Emby Server"))
-        
         let message = "who is EmbyServer?"
         let data = message.data(using: .utf8)!
         let broadcastAddress = "255.255.255.255"
@@ -82,7 +80,7 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
         do {
             let serverInfo = try decoder.decode(ServerInfo.self, from: data)
             self.servers.append(serverInfo)
-            print(serverInfo)
+            print("found - \(serverInfo)")
         } catch {
             print("UDP packet data decoding: \(error)")
         }

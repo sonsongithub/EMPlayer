@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+#if os(macOS)
+#else
+
 class RootViewController: ObservableObject {
     let appState: AppState
     private let apiClient = APIClient()
@@ -128,3 +131,5 @@ struct RootView: View {
     let rootViewController = RootViewController(appState: appState)
     RootView(rootViewController: rootViewController).environmentObject(appState)
 }
+
+#endif

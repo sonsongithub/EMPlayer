@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+#if os(macOS)
+#else
+
 class CollectionViewController: ObservableObject {
     
     let currentItem: BaseItem
@@ -178,3 +181,5 @@ struct CollectionView: View {
     CollectionItemView(item: BaseItem.dummy, appState: AppState())
         .frame(width: 200, height: 320)
 }
+
+#endif

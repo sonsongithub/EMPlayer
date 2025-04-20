@@ -18,7 +18,13 @@ class AccountManager: ObservableObject {
     @Published var names: [String] = []
 
     init() {
+        print("\(type(of: self)) \(#function)")
         loadAccounts()
+        print(accounts)
+    }
+    
+    deinit {
+        print("\(type(of: self)) \(#function)")
     }
     
     func displayName(for key: AccountKey) -> String {

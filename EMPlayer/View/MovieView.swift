@@ -207,6 +207,8 @@ struct CustomSeekBar: View {
 
 // MARK: - CatalystMouseMoveTracker
 
+#if targetEnvironment(macCatalyst)
+
 struct CatalystMouseMoveTracker: UIViewRepresentable {
     var onMove: () -> Void
 
@@ -237,7 +239,12 @@ struct CatalystMouseMoveTracker: UIViewRepresentable {
     }
 }
 
+#endif
+
 // MARK: - AVPlayerView
+
+#if os(macOS)
+#else
 
 struct AVPlayerView: UIViewControllerRepresentable {
     let player: AVPlayer
@@ -458,3 +465,5 @@ struct MovieView: View {
             .navigationBarTitleDisplayMode(.inline)
     }
 }
+
+#endif

@@ -80,12 +80,12 @@ struct LoginToServerView: View {
         Task {
             do {
                 let authenticationResponse = try await self.apiClient.login(server: serverName, username: username, password: password)
-                let account = Account(serverAddress: serverName, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
+                let account = Account(server: serverName, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
                 DispatchQueue.main.async {
                     self.accountManager.saveAccount(account)
                     self.appState.isAuthenticated = true
                     self.appState.userID = account.userID
-                    self.appState.server = account.serverAddress
+                    self.appState.server = account.server
                     self.appState.token = account.token
 //                    self.isLoading = false
 //                    self.errorMessage = nil

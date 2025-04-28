@@ -31,11 +31,11 @@ class AccountManager: ObservableObject {
         guard let account = accounts[key] else {
             return ""
         }
-        return "\(account.username)@\(account.serverAddress)"
+        return "\(account.username)@\(account.server)"
     }
 
     func saveAccount(_ account: Account) {
-        let key = "\(account.serverAddress)|\(account.username)"
+        let key = "\(account.server)|\(account.username)"
         if let data = try? JSONEncoder().encode(account) {
             keychain[data: key] = data
         }
@@ -52,7 +52,7 @@ class AccountManager: ObservableObject {
         }
         DispatchQueue.main.async {
             self.accounts = newAccounts
-            self.names = newAccounts.values.map { "\($0.serverAddress)|\($0.username)" }
+            self.names = newAccounts.values.map { "\($0.server)|\($0.username)" }
         }
     }
 

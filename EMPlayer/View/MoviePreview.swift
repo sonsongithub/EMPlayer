@@ -10,7 +10,7 @@ import SwiftUI
 class MoviePreviewController: ObservableObject {
     @Published var currentItem: BaseItem
     let appState: AppState
-    let apiClient = APIClient()
+//    let apiClient = APIClient()
     
     init(currentItem: BaseItem, appState: AppState) {
         self.currentItem = currentItem
@@ -19,16 +19,16 @@ class MoviePreviewController: ObservableObject {
     
     @MainActor
     func fetch() async {
-        do {
-            let (server, token, userID) = try appState.get()
-            let object = try await apiClient.fetchItemDetail(server: server, userID: userID, token: token, of: currentItem)
-            
-            DispatchQueue.main.async {
-                self.currentItem = object
-            }
-        } catch {
-            print(error)
-        }
+//        do {
+//            let (server, token, userID) = try appState.get()
+//            let object = try await apiClient.fetchItemDetail(server: server, userID: userID, token: token, of: currentItem)
+//            
+//            DispatchQueue.main.async {
+//                self.currentItem = object
+//            }
+//        } catch {
+//            print(error)
+//        }
     }
 }
 struct MoviePreview: View {

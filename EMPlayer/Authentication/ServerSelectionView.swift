@@ -40,9 +40,9 @@ struct ServerSelectionView: View {
                             if let account = accountManager.accounts[name] {
                                 Task {
                                     do {
-                                        let user = try await self.apiClient.getUserInfo(server: account.serverAddress, userID: account.userID, token: account.token)
+                                        let user = try await self.apiClient.getUserInfo(server: account.server, userID: account.userID, token: account.token)
                                         if user.id == account.userID {
-                                            appState.server = account.serverAddress
+                                            appState.server = account.server
                                             appState.token = account.token
                                             appState.userID = account.userID
                                             appState.isAuthenticated = true

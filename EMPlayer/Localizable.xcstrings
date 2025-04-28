@@ -26,9 +26,6 @@
     "Cancel" : {
 
     },
-    "Close" : {
-
-    },
     "Current Server" : {
 
     },
@@ -59,19 +56,19 @@
     "Login: %@" : {
 
     },
+    "No search results" : {
+
+    },
     "OK" : {
 
     },
     "Password" : {
 
     },
-    "Please enter a search query." : {
-
-    },
     "Please login to a server." : {
 
     },
-    "Search..." : {
+    "Please select a server." : {
 
     },
     "Select server" : {
@@ -83,13 +80,13 @@
     "This operation cannot be undone." : {
 
     },
+    "Unknown state" : {
+
+    },
     "User name" : {
 
     },
     "Username" : {
-
-    },
-    "Video Player" : {
 
     },
     "検索..." : {

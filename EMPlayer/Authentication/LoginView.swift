@@ -18,7 +18,7 @@ struct LoginView: View {
     
     let server: String
     
-    let apiClient = APIClient()
+//    let apiClient = APIClient()
 
     init(server: String) {
         self.server = server
@@ -67,29 +67,29 @@ struct LoginView: View {
     }
 
     func login() {
-        isLoading = true
-        errorMessage = nil
-        Task {
-            do {
-                let authenticationResponse = try await self.apiClient.login(server: self.server, username: username, password: password)
-                let account = Account(serverAddress: self.server, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
-                DispatchQueue.main.async {
-                    self.accountManager.saveAccount(account)
-                    self.appState.isAuthenticated = true
-                    self.appState.userID = account.userID
-                    self.appState.server = account.serverAddress
-                    self.appState.token = account.token
-                    self.isLoading = false
-                    self.errorMessage = nil
-                }
-            } catch {
-                print(error)
-                DispatchQueue.main.async {
-                    self.isLoading = false
-                    self.errorMessage = error.localizedDescription
-                }
-            }
-        }
+//        isLoading = true
+//        errorMessage = nil
+//        Task {
+//            do {
+//                let authenticationResponse = try await self.apiClient.login(server: self.server, username: username, password: password)
+//                let account = Account(server: self.server, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
+//                DispatchQueue.main.async {
+//                    self.accountManager.saveAccount(account)
+//                    self.appState.isAuthenticated = true
+//                    self.appState.userID = account.userID
+//                    self.appState.server = account.server
+//                    self.appState.token = account.token
+//                    self.isLoading = false
+//                    self.errorMessage = nil
+//                }
+//            } catch {
+//                print(error)
+//                DispatchQueue.main.async {
+//                    self.isLoading = false
+//                    self.errorMessage = error.localizedDescription
+//                }
+//            }
+//        }
     }
 }
 

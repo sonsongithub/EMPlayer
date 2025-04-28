@@ -12,7 +12,11 @@
 import Foundation
 import SwiftUI
 
-struct BaseItem: Codable {
+struct BaseItem: Codable, Equatable {
+    static func == (lhs: BaseItem, rhs: BaseItem) -> Bool {
+        lhs.id == rhs.id
+    }
+    
     let name: String
     let originalTitle: String?
     let id: String

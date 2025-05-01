@@ -43,6 +43,7 @@ class APIClient {
         guard let url = urlComponents.url else {
             throw APIClientError.cannotCreateURL
         }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue(token, forHTTPHeaderField: "X-Emby-Token")
@@ -84,8 +85,26 @@ class APIClient {
         return try decoder.decode(User.self, from: data)
     }
 
-    func fetchUserView(server: String, userID: String, token: String, with query: [String:String]=[:]) async throws -> [BaseItem] {
+    func fetchUserView(with query: [String:String]=[:]) async throws -> [BaseItem] {
+
+        guard let server = authProviding.server else {
+            throw APIClientError.invalidURL
+        }
+        guard let token = authProviding.token else {
+            throw APIClientError.tokenIsNil
+        }
+        guard let userID = authProviding.userID else {
+            throw APIClientError.invalidUser
+        }
         
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
+            throw APIClientError.cannotCreateURL
+        }
+        guard let url = urlComponents.url else {
+            throw APIClientError.cannotCreateURL
+        }
+        
+    
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Views") else {
             throw APIClientError.cannotCreateURL
         }
@@ -162,7 +181,24 @@ class APIClient {
     }
 
     
-    func fetchItems(server: String, userID: String, token: String, of parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
+    func fetchItems(parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
+        
+        guard let server = authProviding.server else {
+            throw APIClientError.invalidURL
+        }
+        guard let token = authProviding.token else {
+            throw APIClientError.tokenIsNil
+        }
+        guard let userID = authProviding.userID else {
+            throw APIClientError.invalidUser
+        }
+        
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
+            throw APIClientError.cannotCreateURL
+        }
+        guard let url = urlComponents.url else {
+            throw APIClientError.cannotCreateURL
+        }
         
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items") else {
             throw APIClientError.cannotCreateURL

@@ -30,6 +30,18 @@ final class ItemRepository : ObservableObject {
         return user
     }
     
+    @MainActor
+    func root() async throws -> [BaseItem] {
+        let items = try await api.fetchUserView()
+        return items
+    }
+    
+    @MainActor
+    func children(of node: BaseItem) async throws -> [BaseItem] {
+        let items = try await api.fetchItems(parent: node)
+        return items
+    }
+
     /// 子要素を読み込んで node.children にセット
     @MainActor
     func loadChildren(of node: ItemNode) async {

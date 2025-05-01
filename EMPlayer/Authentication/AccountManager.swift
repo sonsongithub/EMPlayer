@@ -10,6 +10,7 @@ import KeychainAccess
 
 typealias AccountKey = String
 
+@MainActor
 class AccountManager: ObservableObject {
     private let keychain = Keychain(service: "com.sonson.EMPlayer")
 
@@ -19,8 +20,7 @@ class AccountManager: ObservableObject {
 
     init() {
         print("\(type(of: self)) \(#function)")
-        loadAccounts()
-        print(accounts)
+        loadAccounts()  
     }
     
     deinit {
@@ -45,15 +45,17 @@ class AccountManager: ObservableObject {
     func loadAccounts() {
         var newAccounts: [AccountKey: Account] = [:]
         for key in (try? keychain.allKeys()) ?? [] {
-            if let data = keychain[data: key],
-               let account = try? JSONDecoder().decode(Account.self, from: data) {
-                newAccounts[key] = account
+            if let data = keychain[data: key] {
+                do {
+                    let account = try JSONDecoder().decode(Account.self, from: data)
+                    newAccounts[key] = account
+                } catch {
+                    print("Failed to decode account data for key \(key): \(error)")
+                }
             }
         }
-        DispatchQueue.main.async {
-            self.accounts = newAccounts
-            self.names = newAccounts.values.map { "\($0.server)|\($0.username)" }
-        }
+        self.accounts = newAccounts
+        self.names = newAccounts.values.map { "\($0.server)|\($0.username)" }
     }
 
     func deleteAccount(server: String, username: String) {

@@ -14,6 +14,7 @@ struct EMPlayerApp: App {
     @StateObject private var authService    = AuthService()
     @StateObject private var repository: ItemRepository
     @StateObject private var serverDiscovery = ServerDiscoveryModel()
+    @StateObject private var drill = DrillDownStore()
     
     init() {
         let appState = AppState()
@@ -24,12 +25,13 @@ struct EMPlayerApp: App {
     var body: some Scene {
         #if os(macOS)
         WindowGroup {
-            MacOSRootView(rootViewController: MacOSRootViewController(appState: appState))
+            MacOSRootView()
                 .environmentObject(appState)
                 .environmentObject(repository)
                 .environmentObject(accountManager)
                 .environmentObject(serverDiscovery)
                 .environmentObject(authService)
+                .environmentObject(drill)
         }
         #else
         WindowGroup {

@@ -17,16 +17,13 @@
     "Are you sure to delete your history?" : {
 
     },
-    "Can not load movie." : {
-
-    },
     "Can not login to the server." : {
 
     },
-    "Cancel" : {
+    "Can't load" : {
 
     },
-    "Current Server" : {
+    "Cancel" : {
 
     },
     "Delete" : {
@@ -38,7 +35,7 @@
     "History" : {
 
     },
-    "Loading..." : {
+    "Loading…" : {
 
     },
     "login" : {
@@ -56,7 +53,7 @@
     "Login: %@" : {
 
     },
-    "No search results" : {
+    "None" : {
 
     },
     "OK" : {
@@ -65,10 +62,7 @@
     "Password" : {
 
     },
-    "Please login to a server." : {
-
-    },
-    "Please select a server." : {
+    "Root" : {
 
     },
     "Select server" : {
@@ -80,16 +74,10 @@
     "This operation cannot be undone." : {
 
     },
-    "Unknown state" : {
-
-    },
     "User name" : {
 
     },
     "Username" : {
-
-    },
-    "検索..." : {
 
     }
   },

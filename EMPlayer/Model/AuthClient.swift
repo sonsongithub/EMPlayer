@@ -32,6 +32,8 @@ class AuthClient {
         request.httpMethod = "POST"
         request.allHTTPHeaderFields = headers
         
+        print(request)
+        
         let jsonData = try JSONSerialization.data(withJSONObject: payload, options: [])
         request.httpBody = jsonData
         

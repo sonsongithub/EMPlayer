@@ -365,6 +365,9 @@ final class MovieViewController: PlayerViewModel {
         @State private var origVis: NSWindow.TitleVisibility = .visible
         @State private var origFull = false
         @State private var origToolbar = false
+        @State private var originalTransparent = false
+        @State private var originalMovableByBG = false
+        @State private var origSeparator: NSTitlebarSeparatorStyle = .automatic
 
         init(item: BaseItem, app: AppState, repo: ItemRepository, onClose: @escaping () -> Void) {
             _vm = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
@@ -379,6 +382,9 @@ final class MovieViewController: PlayerViewModel {
                             origVis = win.titleVisibility
                             origFull = win.styleMask.contains(.fullSizeContentView)
                             origToolbar = win.toolbar?.isVisible ?? false
+                            origSeparator = win.titlebarSeparatorStyle
+                            originalTransparent = win.titlebarAppearsTransparent
+                            originalMovableByBG = win.isMovableByWindowBackground
                         }
                         applyFullOverlay(to: win)
                     }
@@ -406,11 +412,20 @@ final class MovieViewController: PlayerViewModel {
         }
 
         private func restoreWindow() {
-            if let win = NSApplication.shared.keyWindow {
-                win.titleVisibility = origVis
-                if !origFull { win.styleMask.remove(.fullSizeContentView) }
-                win.toolbar?.isVisible = origToolbar
-            }
+            guard let win = NSApplication.shared.keyWindow else { return }
+
+            win.titleVisibility            = origVis
+            win.titlebarAppearsTransparent = originalTransparent
+            win.isMovableByWindowBackground = originalMovableByBG
+
+            // .fullSizeContentView を付けた場合だけ外す
+            if !origFull { win.styleMask.remove(.fullSizeContentView) }
+
+            // ツールバー可視状態を戻す
+            win.toolbar?.isVisible = origToolbar
+
+            // セパレータも復帰させる
+            win.titlebarSeparatorStyle = origSeparator
         }
     }
 #endif

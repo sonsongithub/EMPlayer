@@ -234,7 +234,17 @@ class APIClient {
         return object.items
     }
     
-    func fetchItemDetail(server: String, userID: String, token: String, of item: BaseItem) async throws -> BaseItem {
+    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
+        
+        guard let server = authProviding.server else {
+            throw APIClientError.invalidURL
+        }
+        guard let token = authProviding.token else {
+            throw APIClientError.tokenIsNil
+        }
+        guard let userID = authProviding.userID else {
+            throw APIClientError.invalidUser
+        }
         
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(item.id)") else {
             throw APIClientError.cannotCreateURL

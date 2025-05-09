@@ -17,6 +17,20 @@ struct SeasonView: View {
         if let detail = drill.detail, case let .season(base) = detail.item, detail.children.count > 0 {
             List(detail.children) { child in
                 Text(child.display())
+                    .onTapGesture {
+                        Task {
+                            do {
+                                if case let .episode(base) = child.item {
+                                    let a = try await itemRepository.detail(of: base)
+                                    DispatchQueue.main.async {
+                                        drill.overlay = ItemNode(item: a)
+                                    }
+                                }
+                            } catch {
+                                print("Error: \(error)")
+                            }
+                        }
+                    }
             }
         } else {
             Text("None")
@@ -178,10 +192,16 @@ struct MacOSRootView: View {
             }
             if let overlay = drill.overlay {
                 if case let .movie(base) = overlay.item {
-                    MovieMacView(item: base, app:appState) { drill.overlay = nil }
+                    MovieMacView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
                         .transition(.opacity)
                         .zIndex(1)
                 }
+                if case let .episode(base) = overlay.item {
+                    MovieMacView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+                    
             }
         }
         .onChange(of: appState.token) {

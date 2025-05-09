@@ -41,6 +41,12 @@ final class ItemRepository : ObservableObject {
         let items = try await api.fetchItems(parent: node)
         return items
     }
+    
+    @MainActor
+    func detail(of node: BaseItem) async throws -> BaseItem {
+        let item = try await api.fetchItemDetail(of: node)
+        return item
+    }
 
     /// 子要素を読み込んで node.children にセット
     @MainActor

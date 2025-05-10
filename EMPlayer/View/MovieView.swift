@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - PlayerViewModel  (platform-agnostic ------------------------------------------------)
 
-class PlayerViewModel: ObservableObject {
+class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerDelegate {
     @Published var isPlaying = false
     @Published var currentTime: Double = 0
     @Published var duration: Double = 1
@@ -18,6 +18,9 @@ class PlayerViewModel: ObservableObject {
     @Published var isReady = false
     @Published var isLoading = false
     @Published var hasError = false
+    
+    var pipController: AVPictureInPictureController?
+    @Published var isPipActive = false
 
     var player: AVPlayer?
     var playerItem: AVPlayerItem? {
@@ -32,6 +35,9 @@ class PlayerViewModel: ObservableObject {
             player?.removeTimeObserver(t)
         }
         timer?.cancel()
+#if os(macOS)
+        NSCursor.unhide()
+#endif
     }
 
     func togglePlay() {
@@ -51,9 +57,9 @@ class PlayerViewModel: ObservableObject {
         withAnimation {
             showControls = true
         }
-        #if os(macOS)
-            NSCursor.unhide()
-        #endif
+#if os(macOS)
+        NSCursor.unhide()
+#endif
     }
 
     func startTimer() {
@@ -86,14 +92,20 @@ class PlayerViewModel: ObservableObject {
             player?.removeTimeObserver(t)
         }
         timeObserved = player?.addPeriodicTimeObserver(forInterval: .init(seconds: 0.2, preferredTimescale: 600),
-                                                  queue: .main)
-        { [weak self] t in
+                                                  queue: .main) { [weak self] t in
             guard let s = self else { return }
             if !s.isSeeking {
                 s.currentTime = t.seconds
             }
             s.isPlaying = s.player?.rate != 0
         }
+        
+        if AVPictureInPictureController.isPictureInPictureSupported() {
+            let playerLayer = AVPlayerLayer(player: player)
+            pipController = AVPictureInPictureController(playerLayer: playerLayer)
+            pipController?.delegate = self
+        }
+        
         isReady = true
         isLoading = false
         hasError = false
@@ -103,9 +115,23 @@ class PlayerViewModel: ObservableObject {
         guard isReady, showControls, player?.rate != 0,
               Date().timeIntervalSince(lastInteraction) > 3 else { return }
         withAnimation { showControls = false }
-        #if os(macOS)
-            NSCursor.hide()
-        #endif
+#if os(macOS)
+        NSCursor.hide()
+#endif
+    }
+    // 外部から呼ぶ
+    func togglePiP() {
+        guard let pip = pipController else { return }
+        isPipActive ? pip.stopPictureInPicture() : pip.startPictureInPicture()
+    }
+}
+// PiP 状態のコールバック
+extension PlayerViewModel {
+    func pictureInPictureControllerWillStartPictureInPicture(_ c: AVPictureInPictureController) {
+        isPipActive = true
+    }
+    func pictureInPictureControllerWillStopPictureInPicture(_ c: AVPictureInPictureController) {
+        isPipActive = false
     }
 }
 
@@ -142,14 +168,62 @@ struct CustomSeekBar: View {
 // MARK: - Platform-specific AVPlayer container -------------------------------------------------
 
 #if os(macOS)
-    struct PlatformPlayerView: NSViewRepresentable {
-        let player: AVPlayer
-        func makeNSView(context _: Context) -> AVPlayerView {
-            let v = AVPlayerView(); v.player = player; v.controlsStyle = .none; v.videoGravity = .resizeAspect; return v
+struct PlatformPlayerView: NSViewRepresentable {
+    let player: AVPlayer
+    @Binding var pipController: AVPictureInPictureController?
+    @Binding var pipPossible: Bool
+
+    func makeNSView(context: Context) -> NSView {
+        // 1) Layer-backed NSView を生成
+        let view = NSView(frame: .zero)
+        view.wantsLayer = true
+        
+        // 2) AVPlayerLayer を作って NSView.layer にセット
+        let playerLayer = AVPlayerLayer(player: player)
+        playerLayer.videoGravity = .resizeAspect
+        playerLayer.frame = view.bounds
+        playerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        view.layer = playerLayer
+        
+        // 3) PiP コントローラを生成して KVO も登録
+        if AVPictureInPictureController.isPictureInPictureSupported() {
+            if let ctrl = AVPictureInPictureController(playerLayer: playerLayer) {
+                ctrl.delegate = context.coordinator
+                pipController = ctrl
+                pipPossible = ctrl.isPictureInPicturePossible
+                
+                _ = ctrl.observe(\.isPictureInPicturePossible,
+                                  options: [.initial, .new]) { _, change in
+                    DispatchQueue.main.async {
+                        pipPossible = change.newValue ?? false
+                    }
+                }
+            }
         }
 
-        func updateNSView(_ v: AVPlayerView, context _: Context) { v.player = player }
+        return view
     }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // 再生プレイヤーを差し替え
+        if let layer = nsView.layer as? AVPlayerLayer {
+            layer.player = player
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(pipPossible: $pipPossible)
+    }
+    class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
+        @Binding var pipPossible: Bool
+        init(pipPossible: Binding<Bool>) { self._pipPossible = pipPossible }
+
+        func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler handler: @escaping (Bool) -> Void) {
+            handler(true)
+        }
+    }
+}
 #else
     struct PlatformPlayerView: UIViewControllerRepresentable {
         let player: AVPlayer
@@ -173,12 +247,34 @@ struct PlaybackControlsView: View {
             Button { playerViewModel.seek(by: -10); playerViewModel.resetInteraction() } label: {
                 Image(systemName: "gobackward.10")
             }
+            .buttonStyle(.borderless)
+            .keyboardShortcut(.leftArrow, modifiers: [])
             Button { playerViewModel.togglePlay(); playerViewModel.resetInteraction() } label: {
                 Image(systemName: playerViewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
             }
+            .buttonStyle(.borderless)
+            .keyboardShortcut(.space, modifiers: [])
             Button { playerViewModel.seek(by: 10); playerViewModel.resetInteraction() } label: {
                 Image(systemName: "goforward.10")
             }
+            .buttonStyle(.borderless)
+            .keyboardShortcut(.rightArrow, modifiers: [])
+            Button(action: { playerViewModel.togglePiP() }) {
+                Image(systemName: playerViewModel.isPipActive ? "pip.exit" : "pip")
+            }
+            .buttonStyle(.borderless)
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+#if os(macOS)
+            Button {
+                if let win = NSApp.keyWindow {
+                    win.toggleFullScreen(nil)
+                }
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+            }
+            .buttonStyle(.borderless)
+            .keyboardShortcut("f", modifiers: [])
+#endif
         }
         .font(.title)
     }
@@ -190,7 +286,6 @@ struct PlaybackControlsView: View {
                 Spacer(minLength: 0)
                 transportButtons
                 Spacer(minLength: 0)
-
                 HStack(spacing: 4) {
                     Image(systemName: "speaker.fill")
                     CustomSeekBar(
@@ -241,7 +336,10 @@ struct CustomVideoPlayerView: View {
             } else if playerViewModel.hasError {
                 Text("Can't load").foregroundColor(.white)
             } else if let p = playerViewModel.player {
-                PlatformPlayerView(player: p)
+                PlatformPlayerView(player: p,
+                           pipController: $playerViewModel.pipController,
+                           pipPossible: $playerViewModel.isPipActive)
+            .ignoresSafeArea()
             }
             #if os(macOS)
                 if !playerViewModel.showControls {
@@ -284,6 +382,7 @@ struct CustomVideoPlayerView: View {
             playerViewModel.player?.pause()
             playerViewModel.player = nil
         }
+        .focusEffectDisabled()
     }
 }
 
@@ -302,6 +401,7 @@ struct CustomVideoPlayerView: View {
             init(onMove: @escaping () -> Void) {
                 self.onMove = onMove
                 super.init(frame: .zero)
+                self.focusRingType = .none
                 let opts: NSTrackingArea.Options = [.mouseMoved, .activeAlways, .inVisibleRect]
                 addTrackingArea(NSTrackingArea(rect: .zero, options: opts, owner: self, userInfo: nil))
             }
@@ -355,19 +455,17 @@ final class MovieViewController: PlayerViewModel {
     }
 }
 
-// MARK: - macOS Player View (オーバーレイ用) ---------------------------------------------------
-
 #if os(macOS)
     struct MovieMacView: View {
         @StateObject private var vm: MovieViewController
         var onClose: () -> Void
         // 既存ウィンドウ値保持
-        @State private var origVis: NSWindow.TitleVisibility = .visible
-        @State private var origFull = false
-        @State private var origToolbar = false
+        @State private var originalTitleVisibility: NSWindow.TitleVisibility = .visible
+        @State private var originalContainsFullSize = false
+        @State private var originalToolbarVisibility = false
         @State private var originalTransparent = false
         @State private var originalMovableByBG = false
-        @State private var origSeparator: NSTitlebarSeparatorStyle = .automatic
+        @State private var originalSeparatorStyle: NSTitlebarSeparatorStyle = .automatic
 
         init(item: BaseItem, app: AppState, repo: ItemRepository, onClose: @escaping () -> Void) {
             _vm = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
@@ -377,55 +475,55 @@ final class MovieViewController: PlayerViewModel {
         var body: some View {
             CustomVideoPlayerView(playerViewModel: vm, onClose: onClose)
                 .overlay(
-                    WindowAccessor { win in
-                        if origVis == .visible {
-                            origVis = win.titleVisibility
-                            origFull = win.styleMask.contains(.fullSizeContentView)
-                            origToolbar = win.toolbar?.isVisible ?? false
-                            origSeparator = win.titlebarSeparatorStyle
-                            originalTransparent = win.titlebarAppearsTransparent
-                            originalMovableByBG = win.isMovableByWindowBackground
+                    WindowAccessor { window in
+                        if originalTitleVisibility == .visible {
+                            originalTitleVisibility = window.titleVisibility
+                            originalContainsFullSize = window.styleMask.contains(.fullSizeContentView)
+                            originalToolbarVisibility = window.toolbar?.isVisible ?? false
+                            originalSeparatorStyle = window.titlebarSeparatorStyle
+                            originalTransparent = window.titlebarAppearsTransparent
+                            originalMovableByBG = window.isMovableByWindowBackground
                         }
-                        applyFullOverlay(to: win)
+                        applyFullOverlay(to: window)
                     }
                     .allowsHitTesting(false)
-                )
+                ).onChange(of: vm.isPipActive) {
+                    if vm.isPipActive { vm.showControls = false }
+                }
                 .onDisappear {
                     restoreWindow()
-#if os(macOS)
-                    NSCursor.unhide()
-#endif
                 }
                 .task {
                     await vm.fetch()
                 }
         }
 
-        private func applyFullOverlay(to win: NSWindow) {
-            win.titleVisibility = .hidden
-            win.titlebarAppearsTransparent = true
-            win.isMovableByWindowBackground = true
-            win.styleMask.insert(.fullSizeContentView)
-            win.toolbar?.isVisible = false
-            win.titlebarSeparatorStyle = .none
-            win.isMovableByWindowBackground = false
+        private func applyFullOverlay(to window: NSWindow) {
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.isMovableByWindowBackground = true
+            window.styleMask.insert(.fullSizeContentView)
+            window.toolbar?.isVisible = false
+            window.titlebarSeparatorStyle = .none
+            window.isMovableByWindowBackground = false
         }
 
         private func restoreWindow() {
-            guard let win = NSApplication.shared.keyWindow else { return }
+            guard let window = NSApplication.shared.keyWindow else { return }
 
-            win.titleVisibility            = origVis
-            win.titlebarAppearsTransparent = originalTransparent
-            win.isMovableByWindowBackground = originalMovableByBG
+            window.titleVisibility            = originalTitleVisibility
+            window.titlebarAppearsTransparent = originalTransparent
+            window.isMovableByWindowBackground = originalMovableByBG
 
-            // .fullSizeContentView を付けた場合だけ外す
-            if !origFull { win.styleMask.remove(.fullSizeContentView) }
+            if !originalContainsFullSize {
+                window.styleMask.remove(.fullSizeContentView)
+            }
 
             // ツールバー可視状態を戻す
-            win.toolbar?.isVisible = origToolbar
+            window.toolbar?.isVisible = originalToolbarVisibility
 
             // セパレータも復帰させる
-            win.titlebarSeparatorStyle = origSeparator
+            window.titlebarSeparatorStyle = originalSeparatorStyle
         }
     }
 #endif

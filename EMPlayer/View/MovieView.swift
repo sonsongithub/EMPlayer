@@ -19,6 +19,8 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
     @Published var isLoading = false
     @Published var hasError = false
     
+    var doesManageCursor = false
+    
     var pipController: AVPictureInPictureController?
     @Published var isPipActive = false
 
@@ -36,7 +38,9 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         }
         timer?.cancel()
 #if os(macOS)
-        NSCursor.unhide()
+        if doesManageCursor {
+            NSCursor.unhide()
+        }
 #endif
     }
 
@@ -58,7 +62,9 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
             showControls = true
         }
 #if os(macOS)
-        NSCursor.unhide()
+        if doesManageCursor {
+            NSCursor.unhide()
+        }
 #endif
     }
 
@@ -116,7 +122,9 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
               Date().timeIntervalSince(lastInteraction) > 3 else { return }
         withAnimation { showControls = false }
 #if os(macOS)
-        NSCursor.hide()
+        if doesManageCursor {
+            NSCursor.hide()
+        }
 #endif
     }
     // 外部から呼ぶ
@@ -243,7 +251,7 @@ struct PlaybackControlsView: View {
     @State private var isSeekingVolume = false
 
     private var transportButtons: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 24) {
             Button { playerViewModel.seek(by: -10); playerViewModel.resetInteraction() } label: {
                 Image(systemName: "gobackward.10")
             }
@@ -319,6 +327,7 @@ struct PlaybackControlsView: View {
             .foregroundColor(.white)
             .padding(.horizontal)
         }
+        .padding(.vertical, 20)
         .foregroundColor(.white)
     }
 }

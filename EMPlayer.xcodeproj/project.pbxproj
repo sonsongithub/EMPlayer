@@ -15,22 +15,9 @@
 		14F199402D601A000094FE11 /* EMPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EMPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		141D7CE12DD0431F006204A7 /* Exceptions for "EMPlayer" folder in "EMPlayer" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 14F1993F2D601A000094FE11 /* EMPlayer */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		14F199422D601A000094FE11 /* EMPlayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				141D7CE12DD0431F006204A7 /* Exceptions for "EMPlayer" folder in "EMPlayer" target */,
-			);
 			path = EMPlayer;
 			sourceTree = "<group>";
 		};

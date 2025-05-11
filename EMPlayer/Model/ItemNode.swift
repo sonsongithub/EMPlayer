@@ -46,7 +46,7 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
     @Published var loadError: Error? = nil
     @Published var selected: Bool = false
     
-    var id: String {
+    var customID: String {
         return item.id
     }
     
@@ -80,11 +80,11 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
     }
     
     static func == (lhs: ItemNode, rhs: ItemNode) -> Bool {
-        lhs.id == rhs.id
+        lhs.customID == rhs.customID
     }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+        hasher.combine(customID)
     }
     
     func display() -> String {

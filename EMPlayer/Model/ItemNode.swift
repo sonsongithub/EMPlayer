@@ -18,14 +18,37 @@ enum ItemNodeType: Equatable {
     case collection(BaseItem)
     case boxSet(BaseItem)
     case unknown
+    
+    var id: String {
+        switch self {
+        case .root:
+            return "root"
+        case .movie(let item),
+             .video(let item),
+             .musicVideo(let item),
+             .episode(let item),
+             .series(let item),
+             .season(let item),
+             .collection(let item),
+             .boxSet(let item):
+            return item.id
+        case .unknown:
+            return "unknown-\(UUID().uuidString)"
+        }
+    }
 }
 
-final class ItemNode: ObservableObject, Identifiable {
+final class ItemNode: ObservableObject, Identifiable, Hashable {
+
     let item: ItemNodeType
     @Published var children: [ItemNode]
     @Published var isLoading = false
     @Published var loadError: Error? = nil
     @Published var selected: Bool = false
+    
+    var id: String {
+        return item.id
+    }
     
     init(item: BaseItem?, children: [ItemNode]? = nil) {
         self.children = children ?? []
@@ -54,6 +77,14 @@ final class ItemNode: ObservableObject, Identifiable {
         default:
             self.item = .unknown
         }
+    }
+    
+    static func == (lhs: ItemNode, rhs: ItemNode) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
     
     func display() -> String {

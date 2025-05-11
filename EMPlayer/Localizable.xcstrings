@@ -4,16 +4,6 @@
     "" : {
 
     },
-    "%lld. %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld. %2$@"
-          }
-        }
-      }
-    },
     "Are you sure to delete your history?" : {
 
     },
@@ -27,6 +17,9 @@
 
     },
     "Delete" : {
+
+    },
+    "error" : {
 
     },
     "Found servers" : {

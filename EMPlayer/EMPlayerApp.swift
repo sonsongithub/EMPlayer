@@ -35,7 +35,13 @@ struct EMPlayerApp: App {
         }
         #else
         WindowGroup {
-            RootView(rootViewController: RootViewController(appState: appState)).environmentObject(appState)
+            RootView()
+                .environmentObject(appState)
+                .environmentObject(repository)
+                .environmentObject(drill)
+                .environmentObject(accountManager)
+                .environmentObject(serverDiscovery)
+                .environmentObject(authService)
         }
         #endif
     }

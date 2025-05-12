@@ -21,12 +21,13 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
     
     var doesManageCursor = false
     
-    var pipFlag = false
+    var avPlayerViewController: AVPlayerViewController?
     
+#if os(macOS)
     var pipController: AVPictureInPictureController?
-    @Published var isPipPossible: Bool = false   // PiP が “起動可能” かどうか
-    @Published var isPipActive:   Bool = false   // PiP が “動いている” かどうか
-
+    @Published var isPipPossible: Bool = false
+    @Published var isPipActive:   Bool = false
+#endif
     var player: AVPlayer?
     var playerItem: AVPlayerItem? {
         didSet {
@@ -34,8 +35,6 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         }
     }
     
-    var isBackground = false
-
     private var timeObserved: Any?; private var timer: DispatchSourceTimer?
     deinit {
         if let t = timeObserved {
@@ -127,50 +126,32 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
 #endif
     }
     
+#if os(macOS)
     func togglePiP() {
-        print("togglePiP")
-        print("pipController: \(String(describing: pipController))")
-        print("isPipPossible: \(isPipPossible)")
-        print("isPipActive: \(isPipActive)")
-//        print("AVPictureInPictureControllerDelegate \(pipController
-        print("pipController?.isPictureInPictureActive: \(pipController?.isPictureInPictureActive)")
         guard let pip = pipController else { return }
-        if isPipActive {
+        guard pip.isPictureInPicturePossible else { return }
+        if pip.isPictureInPictureActive {
             pip.stopPictureInPicture()
         } else {
             pip.startPictureInPicture()
         }
     }
     
-    func stopPiP() {
-        pipController?.stopPictureInPicture()
-    }
-}
-// PiP 状態のコールバック
-extension PlayerViewModel {
     func pictureInPictureControllerWillStartPictureInPicture(_ c: AVPictureInPictureController) {
-        print("------------------")
         print(#function)
-        isPipActive = true
+        self.isPipActive = true
     }
     func pictureInPictureControllerWillStopPictureInPicture(_ c: AVPictureInPictureController) {
-        print("------------------")
         print(#function)
-        isPipActive = false
+        self.isPipActive = false
     }
     func pictureInPictureControllerDidStopPictureInPicture(_ c: AVPictureInPictureController) {
-        print("------------------")
         print(#function)
-        isPipActive = false
-//        self.pipFlag = false
     }
     func pictureInPictureControllerDidStartPictureInPicture(_ c: AVPictureInPictureController) {
-        print("------------------")
         print(#function)
-//        DispatchQueue.main.async {
-//            self.pipFlag = false
-//        }
     }
+#endif
 }
 
 // MARK: - SeekBar (shared) ---------------------------------------------------------------------
@@ -227,39 +208,21 @@ struct PlatformPlayerView: NSViewRepresentable {
             if let ctrl = AVPictureInPictureController(playerLayer: playerLayer) {
                 ctrl.delegate = viewModel
                 viewModel.pipController = ctrl
-                viewModel.isPipPossible = ctrl.isPictureInPicturePossible
-                
-                _ = ctrl.observe(\.isPictureInPicturePossible,
-                                  options: [.initial, .new]) { _, change in
+                DispatchQueue.main.async {
+                    viewModel.isPipPossible = ctrl.isPictureInPicturePossible
+                }
+                _ = ctrl.observe(\.isPictureInPicturePossible, options: [.initial, .new]) { _, change in
                     DispatchQueue.main.async {
                         viewModel.isPipPossible = change.newValue ?? false
                     }
                 }
             }
         }
-
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-//        // 再生プレイヤーを差し替え
-//        if let layer = nsView.layer as? AVPlayerLayer {
-//            layer.player = player
-//        }
     }
-
-//    func makeCoordinator() -> Coordinator {
-//        Coordinator(pipPossible: $pipPossible)
-//    }
-//    class Coordinator: NSObject, AVPictureInPictureControllerDelegate {
-//        @Binding var pipPossible: Bool
-//        init(pipPossible: Binding<Bool>) { self._pipPossible = pipPossible }
-//
-//        func pictureInPictureController(_ controller: AVPictureInPictureController,
-//                                        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler handler: @escaping (Bool) -> Void) {
-//            handler(true)
-//        }
-//    }
 }
 #else
 
@@ -272,29 +235,13 @@ struct PlatformPlayerView: UIViewControllerRepresentable {
         vc.player = player
         vc.showsPlaybackControls = false
         vc.allowsPictureInPicturePlayback = true
-        vc.canStartPictureInPictureAutomaticallyFromInline = true
-
+        viewModel.avPlayerViewController = vc
         DispatchQueue.main.async {
             #if os(iOS)
-            try? AVAudioSession.sharedInstance().setCategory(.playback,
-                                                            mode: .moviePlayback,
-                                                            options: [])
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
             try? AVAudioSession.sharedInstance().setActive(true)
             #endif
             let layer = AVPlayerLayer(player: player)
-            // PiP コントローラの生成もここで行う
-            if AVPictureInPictureController.isPictureInPictureSupported(),
-               let ctrl = AVPictureInPictureController(playerLayer: layer) {
-                ctrl.delegate = viewModel
-                ctrl.canStartPictureInPictureAutomaticallyFromInline = true
-                viewModel.pipController = ctrl
-                viewModel.isPipPossible = ctrl.isPictureInPicturePossible
-                _ = ctrl.observe(\.isPictureInPicturePossible, options: [.initial, .new]) { _, change in
-                    DispatchQueue.main.async {
-                        viewModel.isPipPossible = change.newValue ?? false
-                    }
-                }
-            }
         }
         return vc
     }
@@ -323,17 +270,19 @@ struct PlaybackControlsView: View {
             }
             .buttonStyle(.borderless)
             .keyboardShortcut(.space, modifiers: [])
-            Button { playerViewModel.seek(by: 10); playerViewModel.resetInteraction() } label: {
+            Button {
+                playerViewModel.seek(by: 10); playerViewModel.resetInteraction()
+            } label: {
                 Image(systemName: "goforward.10")
             }
             .buttonStyle(.borderless)
             .keyboardShortcut(.rightArrow, modifiers: [])
+#if os(macOS)
             Button(action: { playerViewModel.togglePiP() }) {
                 Image(systemName: playerViewModel.isPipActive ? "pip.exit" : "pip")
             }
             .buttonStyle(.borderless)
             .keyboardShortcut("p", modifiers: [.command, .shift])
-#if os(macOS)
             Button {
                 if let win = NSApp.keyWindow {
                     win.toggleFullScreen(nil)
@@ -420,6 +369,7 @@ struct CustomVideoPlayerView: View {
                     PlaybackControlsView(playerViewModel: playerViewModel)
                 }
             }
+            #if os(macOS)
             if playerViewModel.showControls {
                 Button(action: onClose) {
                     Image(systemName: "xmark.circle.fill")
@@ -430,6 +380,7 @@ struct CustomVideoPlayerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .keyboardShortcut(.escape, modifiers: [])
             }
+            #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
@@ -617,46 +568,6 @@ struct MovieiOSView: View {
                 vm.player?.pause()
                 vm.player = nil
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIScene.willDeactivateNotification)) { _ in
-                print("---------------------------------")
-                print("willDeactivateNotification: pipPossible=\(vm.isPipPossible),pipActive=\(vm.isPipActive)")
-                
-                print("vm.isbackground: \(vm.isBackground)")
-                
-                if vm.isBackground {
-                    return
-                }
-                                
-                guard !vm.pipFlag else {
-                    if vm.isPipActive == false {
-                        vm.pipFlag = false
-                    }
-                    return
-                }
-                vm.isBackground = true
-                vm.pipFlag = true
-                vm.togglePiP()
-                
-            }
-            .onReceive(NotificationCenter.default.publisher(
-                for: UIScene.didEnterBackgroundNotification)) { _ in
-                print("---------------------------------")
-                print("didEnterBackgroundNotification")
-//                vm.isBackground = true
-            }
-            .onReceive(NotificationCenter.default.publisher(
-                for: UIScene.willEnterForegroundNotification)) { _ in
-                    print("---------------------------------")
-                print("willEnterForegroundNotification")
-                    vm.isBackground = false
-                    vm.stopPiP()
-            }
-                .onReceive(NotificationCenter.default.publisher(
-                    for: UIApplication.didBecomeActiveNotification)) { _ in
-                        print("---------------------------------")
-                    print("didBecomeActiveNotification")
-                        vm.pipController?.stopPictureInPicture()
-                }
             .task {
                 await vm.fetch()
             }

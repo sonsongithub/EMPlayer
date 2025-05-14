@@ -101,8 +101,7 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         if let t = timeObserved {
             player?.removeTimeObserver(t)
         }
-        timeObserved = player?.addPeriodicTimeObserver(forInterval: .init(seconds: 0.2, preferredTimescale: 600),
-                                                  queue: .main) { [weak self] t in
+        timeObserved = player?.addPeriodicTimeObserver(forInterval: .init(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] t in
             guard let s = self else { return }
             if !s.isSeeking {
                 s.currentTime = t.seconds
@@ -241,7 +240,6 @@ struct PlatformPlayerView: UIViewControllerRepresentable {
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
             try? AVAudioSession.sharedInstance().setActive(true)
             #endif
-            let layer = AVPlayerLayer(player: player)
         }
         return vc
     }

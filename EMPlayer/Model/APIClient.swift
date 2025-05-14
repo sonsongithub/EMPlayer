@@ -27,15 +27,7 @@ class APIClient {
     
     func userInfo() async throws -> User {
         
-        guard let server = authProviding.server else {
-            throw APIClientError.invalidURL
-        }
-        guard let token = authProviding.token else {
-            throw APIClientError.tokenIsNil
-        }
-        guard let userID = authProviding.userID else {
-            throw APIClientError.invalidUser
-        }
+        let (server, token, userID) = try getBasicInfomation()
         
         guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
             throw APIClientError.cannotCreateURL
@@ -86,25 +78,9 @@ class APIClient {
     }
 
     func fetchUserView(with query: [String:String]=[:]) async throws -> [BaseItem] {
-
-        guard let server = authProviding.server else {
-            throw APIClientError.invalidURL
-        }
-        guard let token = authProviding.token else {
-            throw APIClientError.tokenIsNil
-        }
-        guard let userID = authProviding.userID else {
-            throw APIClientError.invalidUser
-        }
         
-        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
-            throw APIClientError.cannotCreateURL
-        }
-        guard let url = urlComponents.url else {
-            throw APIClientError.cannotCreateURL
-        }
+        let (server, token, userID) = try getBasicInfomation()
         
-    
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Views") else {
             throw APIClientError.cannotCreateURL
         }
@@ -183,22 +159,7 @@ class APIClient {
     
     func fetchItems(parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
         
-        guard let server = authProviding.server else {
-            throw APIClientError.invalidURL
-        }
-        guard let token = authProviding.token else {
-            throw APIClientError.tokenIsNil
-        }
-        guard let userID = authProviding.userID else {
-            throw APIClientError.invalidUser
-        }
-        
-        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
-            throw APIClientError.cannotCreateURL
-        }
-        guard let url = urlComponents.url else {
-            throw APIClientError.cannotCreateURL
-        }
+        let (server, token, userID) = try getBasicInfomation()
         
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items") else {
             throw APIClientError.cannotCreateURL
@@ -234,7 +195,7 @@ class APIClient {
         return object.items
     }
     
-    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
+    func getBasicInfomation() throws -> (String, String, String) {
         
         guard let server = authProviding.server else {
             throw APIClientError.invalidURL
@@ -246,7 +207,14 @@ class APIClient {
             throw APIClientError.invalidUser
         }
         
-        guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(item.id)") else {
+        return (server, token, userID)
+    }
+    
+    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
+        
+        let (server, token, userID) = try getBasicInfomation()
+        
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(item.id)") else {
             throw APIClientError.cannotCreateURL
         }
         guard let url = urlComponents.url else {

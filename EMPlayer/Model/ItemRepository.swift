@@ -47,20 +47,4 @@ final class ItemRepository : ObservableObject {
         let item = try await api.fetchItemDetail(of: node)
         return item
     }
-
-    /// 子要素を読み込んで node.children にセット
-    @MainActor
-    func loadChildren(of node: ItemNode) async {
-        guard node.children == nil, node.isLoading == false else { return }
-        node.isLoading = true
-        do {
-//            // API 実装は type で分岐
-//            let bases = try await api.fetchItems(server: <#T##String#>, userID: <#T##String#>, token: <#T##String#>, of: <#T##BaseItem#>)
-//            node.children = bases.map { self.node(for: $0) }
-//            node.loadError = nil
-        } catch {
-            node.loadError = error
-        }
-        node.isLoading = false
-    }
 }

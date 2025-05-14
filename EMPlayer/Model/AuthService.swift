@@ -14,7 +14,7 @@ final class AuthService: ObservableObject {
     
     func login(server: String, user: String, pass: String) async throws -> AuthenticationResponse {
         let authenticationResponse = try await apiClient.login(server: server, username: user, password: pass)
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.token = authenticationResponse.accessToken
         }
         return authenticationResponse

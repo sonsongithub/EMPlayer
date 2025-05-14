@@ -39,12 +39,12 @@ class AccountManager: ObservableObject {
         if let data = try? JSONEncoder().encode(account) {
             keychain[data: key] = data
         }
-        loadAccounts() // データを保存したら再読み込み
+        loadAccounts()
     }
 
     func loadAccounts() {
         var newAccounts: [AccountKey: Account] = [:]
-        for key in (try? keychain.allKeys()) ?? [] {
+        for key in keychain.allKeys() {
             if let data = keychain[data: key] {
                 do {
                     let account = try JSONDecoder().decode(Account.self, from: data)
@@ -60,13 +60,23 @@ class AccountManager: ObservableObject {
 
     func deleteAccount(server: String, username: String) {
         let key = "\(server)|\(username)"
-        try? keychain.remove(key)
-        loadAccounts() // 削除後に再読み込み
+        do {
+            try keychain.remove(key)
+        } catch {
+            print(error)
+            print("\(key) has not been removed.")
+        }
+        loadAccounts()
     }
     
     func deleteAll() {
-        for key in (try? keychain.allKeys()) ?? [] {
-            try? keychain.remove(key)
+        for key in keychain.allKeys() {
+            do {
+                try keychain.remove(key)
+            } catch {
+                print(error)
+                print("\(key) has not been removed.")
+            }
         }
         loadAccounts()
     }

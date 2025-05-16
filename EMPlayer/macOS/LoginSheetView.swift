@@ -24,28 +24,33 @@ struct LoginSheetView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Login to \(self.selectedServer?.address)")
-                .font(.headline)
-            
-            TextField("Username", text: $username)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
+            if let selectedServer = self.selectedServer {
+                Text("Login to \(selectedServer.address)")
+                    .font(.headline)
+                
+                TextField("Username", text: $username)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
 
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+                SecureField("Password", text: $password)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+                
+                HStack {
+                    Button("Cancel") {
+                        self.selectedServer = nil
+                    }
+                    Spacer()
+                    Button("Login") {
+                        self.login()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
                 .padding(.horizontal)
-            
-            HStack {
-                Button("Cancel") {
-                    self.selectedServer = nil
-                }
-                Spacer()
-                Button("Login") {
-                    self.login()
-                }
-                .keyboardShortcut(.defaultAction)
+            } else {
+                Text("No server selected")
+                    .font(.headline)
             }
-            .padding(.horizontal)
         }
         .padding()
         .frame(width: 400)

@@ -14,7 +14,7 @@ struct SeasonView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     
     var body: some View {
-        if let detail = drill.detail, case let .season(base) = detail.item, detail.children.count > 0 {
+        if let detail = drill.detail, case .season(_) = detail.item, detail.children.count > 0 {
             List(detail.children) { child in
                 Text(child.display())
                     .onTapGesture {

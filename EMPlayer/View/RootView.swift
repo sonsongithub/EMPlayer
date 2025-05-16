@@ -145,9 +145,8 @@ struct RootView: View {
                         .navigationTitle(base.name)
                 case .movie(let base), .episode(let base):
                     MovieiOSView(item: base,
-                                 app: appState,
-                                 repo: itemRepository,) {
-                        // モーダルを閉じる
+                                 appState: appState,
+                                 itemRepository: itemRepository,) {
                         appState.playingItem = nil
                     }
                                  .environmentObject(itemRepository)

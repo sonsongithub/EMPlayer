@@ -20,9 +20,10 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
     @Published var hasError = false
     
     var doesManageCursor = false
-    
+
+#if os(iOS)
     var avPlayerViewController: AVPlayerViewController?
-    
+#endif
 #if os(macOS)
     var pipController: AVPictureInPictureController?
     @Published var isPipPossible: Bool = false
@@ -106,7 +107,7 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
             if !s.isSeeking {
                 s.currentTime = t.seconds
             }
-            s.isPlaying = s.player?.rate != 0
+            s.isPlaying = (s.player?.rate != 0)
         }
         
         isReady = true
@@ -160,26 +161,28 @@ struct CustomSeekBar: View {
     let max: Double
     var onFinished: (Double) -> Void = { _ in }
     @Binding var isSeeking: Bool
+    let radius: CGFloat = 10
 
     var body: some View {
-        GeometryReader { g in
-            let w = g.size.width, r: CGFloat = 10
-            let pct = CGFloat(value / max).clamped(to: 0 ... 1)
-            let x = r + (w - 2 * r) * pct
+        GeometryReader { geometory in
+            let width = geometory.size.width
+            let percentage = CGFloat(value / max).clamped(to: 0...1)
+            let x = radius + (width - 2 * radius) * percentage
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.gray).frame(height: 4)
                 Capsule().fill(Color.white).frame(width: x, height: 4)
-                Circle().fill(Color.white).frame(width: 20, height: 20)
-                    .position(x: x, y: 10)
+                Circle().fill(Color.white).frame(width: radius * 2, height: radius * 2)
+                    .position(x: x, y: radius)
             }
-            .contentShape(Rectangle().inset(by: -10))
+            .contentShape(Rectangle().inset(by: -radius))
             .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { g in isSeeking = true
-                    value = Double(((g.location.x - r) / (w - 2 * r)).clamped(to: 0 ... 1)) * max
+                .onChanged { geometory in
+                    isSeeking = true
+                    value = Double(((geometory.location.x - radius) / (width - 2 * radius)).clamped(to: 0...1)) * max
                 }
                 .onEnded { _ in isSeeking = false; onFinished(value) })
         }
-        .frame(height: 20)
+        .frame(height: radius * 2)
     }
 }
 
@@ -224,30 +227,28 @@ struct PlatformPlayerView: NSViewRepresentable {
     }
 }
 #else
-
 struct PlatformPlayerView: UIViewControllerRepresentable {
     let player: AVPlayer
     @ObservedObject var viewModel: PlayerViewModel
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
-        let vc = AVPlayerViewController()
-        vc.player = player
-        vc.showsPlaybackControls = false
-        vc.allowsPictureInPicturePlayback = true
-        viewModel.avPlayerViewController = vc
+        let viewController = AVPlayerViewController()
+        viewController.player = player
+        viewController.showsPlaybackControls = false
+        viewController.allowsPictureInPicturePlayback = true
+        viewModel.avPlayerViewController = viewController
         DispatchQueue.main.async {
-            #if os(iOS)
+#if os(iOS)
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
             try? AVAudioSession.sharedInstance().setActive(true)
-            #endif
+#endif
         }
-        return vc
+        return viewController
     }
 
     func updateUIViewController(_ vc: AVPlayerViewController, context: Context) {
     }
 }
-
 #endif
 
 // MARK: - PlaybackControlsView -----------------------------------------------------------------
@@ -282,8 +283,8 @@ struct PlaybackControlsView: View {
             .buttonStyle(.borderless)
             .keyboardShortcut("p", modifiers: [.command, .shift])
             Button {
-                if let win = NSApp.keyWindow {
-                    win.toggleFullScreen(nil)
+                if let window = NSApp.keyWindow {
+                    window.toggleFullScreen(nil)
                 }
             } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -298,28 +299,28 @@ struct PlaybackControlsView: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 0) {
-                Spacer().frame(width: 190)
                 Spacer(minLength: 0)
                 transportButtons
                 Spacer(minLength: 0)
-                HStack(spacing: 4) {
-                    Image(systemName: "speaker.fill")
-                    CustomSeekBar(
-                        value: Binding(
-                            get: { Double(playerViewModel.volume) },
-                            set: { playerViewModel.volume = Float($0) }
-                        ),
-                        max: 1.0,
-                        onFinished: { _ in playerViewModel.resetInteraction() },
-                        isSeeking: $isSeekingVolume
-                    )
-                    .frame(width: 120, height: 20)
-                    Image(systemName: "speaker.wave.3.fill")
-                }
-                .padding(.leading, 12)
             }
             .padding(.horizontal)
-
+            
+            HStack(spacing: 4) {
+                Image(systemName: "speaker.fill")
+                CustomSeekBar(
+                    value: Binding(
+                        get: { Double(playerViewModel.volume) },
+                        set: { playerViewModel.volume = Float($0) }
+                    ),
+                    max: 1.0,
+                    onFinished: { _ in playerViewModel.resetInteraction() },
+                    isSeeking: $isSeekingVolume
+                )
+                .frame(width: 120, height: 20)
+                Image(systemName: "speaker.wave.3.fill")
+            }
+            .padding(.leading, 12)
+            
             CustomSeekBar(value: $playerViewModel.currentTime,
                           max: playerViewModel.duration,
                           onFinished: { playerViewModel.seek(to: $0); playerViewModel.resetInteraction() },
@@ -352,22 +353,22 @@ struct CustomVideoPlayerView: View {
                 ProgressView("Loading…").tint(.white)
             } else if playerViewModel.hasError {
                 Text("Can't load").foregroundColor(.white)
-            } else if let p = playerViewModel.player {
-                PlatformPlayerView(player: p, viewModel: self.playerViewModel)
+            } else if let player = playerViewModel.player {
+                PlatformPlayerView(player: player, viewModel: self.playerViewModel)
                 .ignoresSafeArea()
             }
-            #if os(macOS)
-                if !playerViewModel.showControls {
-                    MouseMoveTracker { playerViewModel.resetInteraction() }
-                }
-            #endif
+#if os(macOS)
+            if !playerViewModel.showControls {
+                MouseMoveTracker { playerViewModel.resetInteraction() }
+            }
+#endif
             if playerViewModel.showControls {
                 VStack {
                     Spacer()
                     PlaybackControlsView(playerViewModel: playerViewModel)
                 }
             }
-            #if os(macOS)
+#if os(macOS)
             if playerViewModel.showControls {
                 Button(action: onClose) {
                     Image(systemName: "xmark.circle.fill")
@@ -378,7 +379,7 @@ struct CustomVideoPlayerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .keyboardShortcut(.escape, modifiers: [])
             }
-            #endif
+#endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
@@ -387,13 +388,13 @@ struct CustomVideoPlayerView: View {
             playerViewModel.resetInteraction()
         }
         .focusable()
-        #if os(macOS)
-        #if swift(>=5.7)
+#if os(macOS)
+    #if swift(>=5.7)
         .onExitCommand(perform: onClose)
-        #else
+    #else
         .onCancelCommand(perform: onClose)
-        #endif
-        #endif
+    #endif
+#endif
         .onAppear {
             playerViewModel.startTimer()
         }
@@ -408,34 +409,34 @@ struct CustomVideoPlayerView: View {
 // MARK: - MouseMoveTracker (macOS only) --------------------------------------------------------
 
 #if os(macOS)
-    struct MouseMoveTracker: NSViewRepresentable {
-        var onMove: () -> Void
-        func makeNSView(context _: Context) -> NSView {
-            TrackingView(onMove: onMove)
+struct MouseMoveTracker: NSViewRepresentable {
+    var onMove: () -> Void
+    func makeNSView(context _: Context) -> NSView {
+        TrackingView(onMove: onMove)
+    }
+
+    func updateNSView(_: NSView, context _: Context) {}
+    private final class TrackingView: NSView {
+        let onMove: () -> Void
+        init(onMove: @escaping () -> Void) {
+            self.onMove = onMove
+            super.init(frame: .zero)
+            self.focusRingType = .none
+            let opts: NSTrackingArea.Options = [.mouseMoved, .activeAlways, .inVisibleRect]
+            addTrackingArea(NSTrackingArea(rect: .zero, options: opts, owner: self, userInfo: nil))
         }
 
-        func updateNSView(_: NSView, context _: Context) {}
-        private final class TrackingView: NSView {
-            let onMove: () -> Void
-            init(onMove: @escaping () -> Void) {
-                self.onMove = onMove
-                super.init(frame: .zero)
-                self.focusRingType = .none
-                let opts: NSTrackingArea.Options = [.mouseMoved, .activeAlways, .inVisibleRect]
-                addTrackingArea(NSTrackingArea(rect: .zero, options: opts, owner: self, userInfo: nil))
-            }
-
-            @available(*, unavailable) required init?(coder _: NSCoder) {
-                nil
-            }
-            override func mouseMoved(with _: NSEvent) {
-                onMove()
-            }
-            override func viewDidMoveToWindow() {
-                window?.acceptsMouseMovedEvents = true
-            }
+        @available(*, unavailable) required init?(coder _: NSCoder) {
+            nil
+        }
+        override func mouseMoved(with _: NSEvent) {
+            onMove()
+        }
+        override func viewDidMoveToWindow() {
+            window?.acceptsMouseMovedEvents = true
         }
     }
+}
 #endif
 
 // MARK: - MovieViewController (API + PlayerVM) -------------------------------------------------
@@ -547,27 +548,24 @@ struct MovieMacView: View {
 }
 #else
 struct MovieiOSView: View {
-    @StateObject private var vm: MovieViewController
+    @StateObject private var viewController: MovieViewController
     @Environment(\.scenePhase) private var scenePhase
     var onClose: () -> Void
 
-    init(item: BaseItem, app: AppState, repo: ItemRepository, onClose: @escaping () -> Void = {}) {
-        _vm = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
+    init(item: BaseItem, appState: AppState, itemRepository: ItemRepository, onClose: @escaping () -> Void = {}) {
+        _viewController = .init(wrappedValue: MovieViewController(currentItem: item, appState: appState, repo: itemRepository))
         self.onClose = onClose
     }
 
     var body: some View {
-        CustomVideoPlayerView(playerViewModel: vm, onClose: onClose)
-            .navigationBarHidden(!vm.showControls)
-            .onAppear() {
-                print("appear")
-            }
+        CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose)
+            .navigationBarHidden(!viewController.showControls)
             .onDisappear {
-                vm.player?.pause()
-                vm.player = nil
+                viewController.player?.pause()
+                viewController.player = nil
             }
             .task {
-                await vm.fetch()
+                await viewController.fetch()
             }
     }
 }
@@ -579,13 +577,13 @@ struct MovieiOSView: View {
     struct WindowAccessor: NSViewRepresentable {
         var callback: (NSWindow) -> Void
         func makeNSView(context _: Context) -> NSView {
-            let v = NSView()
+            let view = NSView()
             DispatchQueue.main.async {
-                if let w = v.window {
-                    callback(w)
+                if let window = view.window {
+                    callback(window)
                 }
             }
-            return v
+            return view
         }
 
         func updateNSView(_: NSView, context _: Context) {}

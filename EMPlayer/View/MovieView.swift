@@ -256,6 +256,7 @@ struct PlatformPlayerView: UIViewControllerRepresentable {
 struct PlaybackControlsView: View {
     @ObservedObject var playerViewModel: PlayerViewModel
     @State private var isSeekingVolume = false
+    var onClose: () -> Void = {}
 
     private var transportButtons: some View {
         HStack(spacing: 24) {
@@ -297,7 +298,20 @@ struct PlaybackControlsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
+            
+#if os(macOS)
+            Button(action: onClose) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 24)).foregroundColor(.white)
+            }
+            .buttonStyle(.plain)
+            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .keyboardShortcut(.escape, modifiers: [])
+            Spacer()
+#endif
+            
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 transportButtons
@@ -336,7 +350,7 @@ struct PlaybackControlsView: View {
             .foregroundColor(.white)
             .padding(.horizontal)
         }
-        .padding(.vertical, 20)
+        .padding(.vertical, 0)
         .foregroundColor(.white)
     }
 }
@@ -365,21 +379,9 @@ struct CustomVideoPlayerView: View {
             if playerViewModel.showControls {
                 VStack {
                     Spacer()
-                    PlaybackControlsView(playerViewModel: playerViewModel)
+                    PlaybackControlsView(playerViewModel: playerViewModel, onClose: onClose)
                 }
             }
-#if os(macOS)
-            if playerViewModel.showControls {
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24)).foregroundColor(.white)
-                }
-                .buttonStyle(.plain)
-                .padding(16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .keyboardShortcut(.escape, modifiers: [])
-            }
-#endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
@@ -610,3 +612,15 @@ private extension Double {
 extension Notification.Name {
     static let closePlayer = Notification.Name("closePlayer")
 }
+
+#if os(macOS)
+#Preview {
+    MovieMacView(item: BaseItem.dummy, app: AppState(), repo: ItemRepository(authProviding: AppState())) {}
+}
+#endif
+
+#if os(iOS)
+#Preview {
+    MovieiOSView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+}
+#endif

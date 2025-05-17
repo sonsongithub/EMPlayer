@@ -257,6 +257,25 @@ struct PlaybackControlsView: View {
     @ObservedObject var playerViewModel: PlayerViewModel
     @State private var isSeekingVolume = false
     var onClose: () -> Void = {}
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    
+    private var soubdVolume: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "speaker.fill")
+            CustomSeekBar(
+                value: Binding(
+                    get: { Double(playerViewModel.volume) },
+                    set: { playerViewModel.volume = Float($0) }
+                ),
+                max: 1.0,
+                onFinished: { _ in playerViewModel.resetInteraction() },
+                isSeeking: $isSeekingVolume
+            )
+            .frame(width: 120, height: 20)
+            Image(systemName: "speaker.wave.3.fill")
+        }
+        .padding(.leading, 12)
+    }
 
     private var transportButtons: some View {
         HStack(spacing: 24) {
@@ -277,80 +296,48 @@ struct PlaybackControlsView: View {
             }
             .buttonStyle(.borderless)
             .keyboardShortcut(.rightArrow, modifiers: [])
-#if os(macOS)
-            Button(action: { playerViewModel.togglePiP() }) {
-                Image(systemName: playerViewModel.isPipActive ? "pip.exit" : "pip")
-            }
-            .buttonStyle(.borderless)
-            .keyboardShortcut("p", modifiers: [.command, .shift])
-            Button {
-                if let window = NSApp.keyWindow {
-                    window.toggleFullScreen(nil)
-                }
-            } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-            }
-            .buttonStyle(.borderless)
-            .keyboardShortcut("f", modifiers: [])
-#endif
         }
         .font(.title)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            
-#if os(macOS)
-            Button(action: onClose) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 24)).foregroundColor(.white)
-            }
-            .buttonStyle(.plain)
-            .padding(16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .keyboardShortcut(.escape, modifiers: [])
-            Spacer()
-#endif
-            
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                transportButtons
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal)
-            
-            HStack(spacing: 4) {
-                Image(systemName: "speaker.fill")
-                CustomSeekBar(
-                    value: Binding(
-                        get: { Double(playerViewModel.volume) },
-                        set: { playerViewModel.volume = Float($0) }
-                    ),
-                    max: 1.0,
-                    onFinished: { _ in playerViewModel.resetInteraction() },
-                    isSeeking: $isSeekingVolume
-                )
-                .frame(width: 120, height: 20)
-                Image(systemName: "speaker.wave.3.fill")
-            }
-            .padding(.leading, 12)
-            
-            CustomSeekBar(value: $playerViewModel.currentTime,
-                          max: playerViewModel.duration,
-                          onFinished: { playerViewModel.seek(to: $0); playerViewModel.resetInteraction() },
-                          isSeeking: $playerViewModel.isSeeking)
+        VStack(spacing: 20) {
+             
+            if hSizeClass == .compact {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    transportButtons
+                    Spacer(minLength: 0)
+                }
                 .padding(.horizontal)
-
-            HStack {
-                Text(playerViewModel.currentTime.timeString)
-                Spacer()
-                Text(playerViewModel.duration.timeString)
+                soubdVolume
+            } else {
+                HStack(spacing: 0) {
+                    soubdVolume.hidden()
+                    Spacer(minLength: 0)
+                    transportButtons
+                    Spacer(minLength: 0)
+                    soubdVolume
+                }
+                .padding(.horizontal)
             }
-            .font(.caption)
-            .foregroundColor(.white)
-            .padding(.horizontal)
+            VStack(spacing: 0) {
+                CustomSeekBar(value: $playerViewModel.currentTime,
+                              max: playerViewModel.duration,
+                              onFinished: { playerViewModel.seek(to: $0); playerViewModel.resetInteraction() },
+                              isSeeking: $playerViewModel.isSeeking)
+                .padding(.horizontal)
+                
+                HStack {
+                    Text(playerViewModel.currentTime.timeString)
+                    Spacer()
+                    Text(playerViewModel.duration.timeString)
+                }
+                .font(.caption)
+                .foregroundColor(.white)
+                .padding(.horizontal)
+            }
         }
-        .padding(.vertical, 0)
         .foregroundColor(.white)
     }
 }
@@ -372,6 +359,46 @@ struct CustomVideoPlayerView: View {
                 .ignoresSafeArea()
             }
 #if os(macOS)
+            
+            if playerViewModel.showControls {
+                HStack(spacing: 20) {
+                    
+                    Button(action: { playerViewModel.togglePiP() }) {
+                        Image(systemName: playerViewModel.isPipActive ? "pip.exit" : "pip")
+                            .font(.system(size: 24))
+                    }
+                    .foregroundColor(.white)
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut("p", modifiers: [.command, .shift])
+                    
+                    Button {
+                        if let window = NSApp.keyWindow {
+                            window.toggleFullScreen(nil)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 24))
+                    }
+                    .foregroundColor(.white)
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut("f", modifiers: [])
+                    
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24)).foregroundColor(.white)
+                    }
+                }
+                .padding(16)
+                .background(Color.black.opacity(0.6))
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                .buttonStyle(.plain)
+                .padding([.trailing], 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .keyboardShortcut(.escape, modifiers: [])
+            }
+            
             if !playerViewModel.showControls {
                 MouseMoveTracker { playerViewModel.resetInteraction() }
             }
@@ -380,6 +407,11 @@ struct CustomVideoPlayerView: View {
                 VStack {
                     Spacer()
                     PlaybackControlsView(playerViewModel: playerViewModel, onClose: onClose)
+                        .padding(16)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                 }
             }
         }
@@ -456,24 +488,36 @@ final class MovieViewController: PlayerViewModel {
     }
 
     @MainActor func fetch() async {
-        do {
-            isLoading = true
-            let (server, token, _) = try appState.get()
-            let detail = try await itemRepository.detail(of: item)
-            guard let url = detail.playableVideo(from: server) else {
-                throw APIClientError.invalidURL
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            Task {
+                let url = Bundle.main.url(forResource: "output01", withExtension: "mp4")!
+                let asset = AVURLAsset(url: url)
+                DispatchQueue.main.async {
+                    self.playerItem = AVPlayerItem(asset: asset)
+                    self.player?.play()
+                    self.resetInteraction()
+                }
             }
-            let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
-            DispatchQueue.main.async {
-                self.playerItem = AVPlayerItem(asset: asset)
-                self.player?.play()
-                self.resetInteraction()
+        } else {
+            do {
+                isLoading = true
+                let (server, token, _) = try appState.get()
+                let detail = try await itemRepository.detail(of: item)
+                guard let url = detail.playableVideo(from: server) else {
+                    throw APIClientError.invalidURL
+                }
+                let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
+                DispatchQueue.main.async {
+                    self.playerItem = AVPlayerItem(asset: asset)
+                    self.player?.play()
+                    self.resetInteraction()
+                }
+            } catch {
+                print("Error: \(error)")
+                hasError = true
             }
-        } catch {
-            print("Error: \(error)")
-            hasError = true
+            isLoading = false
         }
-        isLoading = false
     }
 }
 
@@ -567,6 +611,7 @@ struct MovieiOSView: View {
                 viewController.player = nil
             }
             .task {
+                print("MovieiOSView task")
                 await viewController.fetch()
             }
     }

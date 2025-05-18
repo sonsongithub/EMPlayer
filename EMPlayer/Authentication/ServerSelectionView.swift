@@ -50,10 +50,12 @@ struct ServerSelectionView: View {
             }
             .navigationTitle("Login")
             .navigationDestination(for: ServerInfo.self) { value in
+                #if !os(tvOS)
                 LoginView(server: value.address)
                     .environmentObject(accountManager)
                     .environmentObject(appState)
                     .environmentObject(authService)
+                #endif
             }
             .alert("Can not login to the server.", isPresented: $showErrorAlert, actions: {
                 Button("OK", role: .cancel) {}

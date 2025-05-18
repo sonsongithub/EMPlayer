@@ -155,7 +155,6 @@ class APIClient {
         let object = try decoder.decode(QueryResult<BaseItem>.self, from: data)
         return object.items
     }
-
     
     func fetchItems(parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
         
@@ -210,11 +209,12 @@ class APIClient {
         return (server, token, userID)
     }
     
-    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
+//    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
         
+    func fetchItemDetail(of itemID: String) async throws -> BaseItem {
         let (server, token, userID) = try getBasicInfomation()
         
-        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(item.id)") else {
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(itemID)") else {
             throw APIClientError.cannotCreateURL
         }
         guard let url = urlComponents.url else {

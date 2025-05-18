@@ -144,17 +144,29 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case .movie(let base), .episode(let base):
+#if os(iOS)
                     MovieiOSView(item: base,
                                  appState: appState,
                                  itemRepository: itemRepository,) {
                         appState.playingItem = nil
                     }
                                  .environmentObject(itemRepository)
-                                    .environmentObject(drill)
-                                    .environmentObject(appState)
-                                    .environmentObject(accountManager)
-                                    .environmentObject(authService)
-                    
+                                 .environmentObject(drill)
+                                 .environmentObject(appState)
+                                 .environmentObject(accountManager)
+                                 .environmentObject(authService)
+#elseif os(tvOS)
+                    MovietvOSView(item: base,
+                                 appState: appState,
+                                 itemRepository: itemRepository,) {
+                        appState.playingItem = nil
+                    }
+                                 .environmentObject(itemRepository)
+                                 .environmentObject(drill)
+                                 .environmentObject(appState)
+                                 .environmentObject(accountManager)
+                                 .environmentObject(authService)
+#endif
                 default:
                     Text("error")
                 }

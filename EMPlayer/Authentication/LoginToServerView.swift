@@ -30,17 +30,23 @@ struct LoginToServerView: View {
                 .fontWeight(.bold)
             
             TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
+            #if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
                 .autocapitalization(.none)
                 .textContentType(.none)
                 .foregroundColor(.primary)
 
             TextField("User name", text: $username)
+#if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
                 .autocapitalization(.none)
 
             SecureField("Password", text: $password)
+#if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
 
             if let error = loginError {
                 Text(error)

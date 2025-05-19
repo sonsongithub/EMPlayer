@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-#if os(iOS)
-
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
@@ -33,12 +31,16 @@ struct LoginView: View {
                 .padding()
 
             TextField("Username", text: $username)
+            #if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
                 .autocapitalization(.none)
                 .padding()
 
             SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+#if !os(tvOS)
+    .textFieldStyle(RoundedBorderTextFieldStyle())
+#endif
                 .autocapitalization(.none)
                 .textContentType(.password)
                 .padding()
@@ -79,29 +81,6 @@ struct LoginView: View {
                 }
             }
         }
-//        isLoading = true
-//        errorMessage = nil
-//        Task {
-//            do {
-//                let authenticationResponse = try await self.apiClient.login(server: self.server, username: username, password: password)
-//                let account = Account(server: self.server, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
-//                DispatchQueue.main.async {
-//                    self.accountManager.saveAccount(account)
-//                    self.appState.isAuthenticated = true
-//                    self.appState.userID = account.userID
-//                    self.appState.server = account.server
-//                    self.appState.token = account.token
-//                    self.isLoading = false
-//                    self.errorMessage = nil
-//                }
-//            } catch {
-//                print(error)
-//                DispatchQueue.main.async {
-//                    self.isLoading = false
-//                    self.errorMessage = error.localizedDescription
-//                }
-//            }
-//        }
     }
 }
 
@@ -112,5 +91,3 @@ struct LoginView: View {
         .environmentObject(accountManager)
         .environmentObject(appState)
 }
-
-#endif

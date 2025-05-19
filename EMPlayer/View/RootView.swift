@@ -57,45 +57,13 @@ struct RootView: View {
     @State private var showAuthSheet = false
     
     var body: some View {
-        NavigationStack {
+        NavigationStack() {
             List {
                 if let root = drill.root {
                     ForEach(root.children, id: \.id) { child in
                         NavigationLink(value: child) {
                             Text(child.display())
                         }
-//                        if case let .movie(base) = child.item {
-//                            Text(child.display())
-//                                .onTapGesture {
-//                                    appState.playingNode = child
-//                                                
-//                                }
-//                        } else {
-//                            NavigationLink(value: child) {
-//                                Text(child.display())
-//                            }
-//                        }
-//                        // 動画アイテムは Button でシートを起動
-//                        if case let .movie(base) = child.item {
-//                            Button {
-//                                appState.playingNode = child
-//                            } label: {
-//                                Text(child.display())
-//                            }
-//                            .buttonStyle(PlainButtonStyle())
-//                        } else if case let .episode(base) = child.item {
-//                            Button {
-//                                appState.playingNode = child
-//                            } label: {
-//                                Text(child.display())
-//                            }
-//                            .buttonStyle(PlainButtonStyle())
-//                        } else {
-//                            NavigationLink(value: child) {
-//                                Text(child.display())
-//                            }
-//                        }
-                        
                     }
                 }
             }

@@ -9,10 +9,13 @@
 import AVKit
 import SwiftUI
 
+#if os(tvOS)
+
 struct MovietvOSView: View {
     @StateObject private var viewController: MovieViewController
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var drill: DrillDownStore
 
     /// ここでホスティングコントローラを @State で保持
     @State private var infoVCs: [UIViewController] = []
@@ -28,6 +31,10 @@ struct MovietvOSView: View {
         // -- もしくは直接 --
         CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose, customInfoControllers: infoVCs)
         .ignoresSafeArea()
+        .onDisappear {
+            viewController.player?.pause()
+            viewController.player = nil
+        }
         .onAppear {
             Task {
                 await viewController.fetch()
@@ -48,9 +55,14 @@ struct MovietvOSView: View {
                             if episode_ids.contains(detail.id) {
                                 let related = try await itemRepository.children(of: theSeason)
                                 DispatchQueue.main.async {
-                                    let view = RelatedVideosView(appState: self.appState, items: related)
+                                    let view = RelatedVideosView(appState: self.appState, items: related) { item in
+                                        viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
+                                        Task {
+                                            await viewController.playNewVideo(newItem: item)
+                                        }
+                                    }
                                     let vc = UIHostingController(rootView: view)
-                                    vc.title = "test"
+                                    vc.title = parent.name
                                     self.infoVCs = [vc]
                                 }
                                 break
@@ -68,3 +80,5 @@ struct MovietvOSView: View {
 #Preview {
     MovietvOSView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
 }
+
+#endif

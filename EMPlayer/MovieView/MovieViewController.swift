@@ -37,15 +37,16 @@ private func createMetadataItem(for identifier: AVMetadataIdentifier,
 /// SwiftUI 側で渡す関連動画リストビューの例
 struct RelatedVideosView: View {
     var appState: AppState
-    
     let items: [BaseItem]
+    var onPush: (BaseItem) -> Void
+    
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: 16) {
                 ForEach(items, id: \.id) { item in
                     // ← ここを Button に変更
                           Button(action: {
-                            // 関連動画タップ時の処理
+                              onPush(item)
                           }) {
                             VStack(alignment: .leading, spacing: 8) {
                               AsyncImage(url: item.imageURL(server: appState.server)) { img in
@@ -81,7 +82,7 @@ struct RelatedVideosView: View {
 final class MovieViewController: PlayerViewModel {
     let appState: AppState
     let itemRepository: ItemRepository
-    let item: BaseItem
+    var item: BaseItem
     
     init(currentItem: BaseItem, appState: AppState, repo: ItemRepository) {
         item = currentItem
@@ -89,6 +90,34 @@ final class MovieViewController: PlayerViewModel {
         self.itemRepository = repo
         super.init()
     }
+    
+    @MainActor func playNewVideo(newItem: BaseItem) async {
+        do {
+            isLoading = true
+            let (server, token, _) = try appState.get()
+            let detail = try await itemRepository.detail(of: newItem)
+            
+            
+            guard let url = detail.playableVideo(from: server) else {
+                throw APIClientError.invalidURL
+            }
+            let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
+            DispatchQueue.main.async {
+                
+                
+                
+                self.playerItem = AVPlayerItem(asset: asset)
+                self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+                self.player?.play()
+            }
+            
+            
+        } catch {
+            print("Error: \(error)")
+            hasError = true
+        }
+    }
+        
 
     @MainActor func fetch() async {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {

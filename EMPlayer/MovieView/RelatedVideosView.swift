@@ -16,39 +16,42 @@ struct RelatedVideosView: View {
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 16) {
+            LazyHStack(spacing: 32) {
                 ForEach(items, id: \.id) { item in
-                          Button(action: {
-                              onPush(item)
-                          }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                              AsyncImage(url: item.imageURL(server: appState.server)) { img in
+                    Button(action: {
+                        onPush(item)
+                    }) {
+                        HStack() {
+                            AsyncImage(url: item.imageURL(server: appState.server)) { img in
                                 img.resizable().scaledToFill()
-                              } placeholder: {
+                            } placeholder: {
                                 Color.gray.opacity(0.3)
-                              }
-                              .frame(width: 200, height: 112)
-                              .clipped()
-                              .cornerRadius(8)
-                              .padding(.horizontal, 4)
-                              .padding(.vertical, 4)
-
-                              Text(item.name)
-                                .font(.footnote)
-                                .lineLimit(2)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 4)
                             }
-                            .frame(width: 200)
-                            .padding(4)
-                          }
+                            .frame(width: 200, height: 140)
+                            .clipped()
+                            .cornerRadius(8)
+                            .padding(0)
+                            
+                            VStack(alignment: .leading) {
+                                Text(item.name)
+                                    .font(.footnote)
+                                    .lineLimit(2)
+                                Text(item.overview ?? "")
+                                    .font(.caption2)
+                                    .lineLimit(4)
+                            }.padding(0)
+                        }.padding(0)
+                    }
+                    .padding(0)
+                    .frame(width: 600, height: 160)
                 }
             }
             .padding(.horizontal, 16)
         }
+        .frame(height: 215)
         .padding(.vertical, 8)
         .background(Color.black.opacity(0.6))
-        .cornerRadius(12)
+        .cornerRadius(32)
     }
 }
 

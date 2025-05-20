@@ -9,6 +9,10 @@
 import AVKit
 import SwiftUI
 
+enum ContentError: Error {
+    case notFoundSeason
+}
+
 #if os(tvOS)
 
 struct MovietvOSView: View {
@@ -39,38 +43,33 @@ struct MovietvOSView: View {
             Task {
                 await viewController.fetch()
                 
+                var children: [BaseItem] = []
+                
                 do {
-                    let detail = try await itemRepository.detail(of: viewController.item)
-                    print(detail)
-                    if let seriesID = detail.seriesId {
-                        let parent = try await itemRepository.detail(of: seriesID)
-                        let children = try await itemRepository.children(of: parent)
-                        print(seriesID)
-                        print(parent)
-                        print(children)
-                        
-                        for theSeason in children {
-                            let episodes = try await itemRepository.children(of: theSeason)
-                            let episode_ids = episodes.map { $0.id }
-                            if episode_ids.contains(detail.id) {
-                                let related = try await itemRepository.children(of: theSeason)
-                                DispatchQueue.main.async {
-                                    let view = RelatedVideosView(appState: self.appState, items: related) { item in
-                                        viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
-                                        Task {
-                                            await viewController.playNewVideo(newItem: item)
-                                        }
-                                    }
-                                    let vc = UIHostingController(rootView: view)
-                                    vc.title = parent.name
-                                    self.infoVCs = [vc]
-                                }
-                                break
-                            }
-                        }
-                    }
+                    children.append(contentsOf: try await viewController.getSeason(of: viewController.item))
                 } catch {
                     print("Error: \(error)")
+                }
+                
+                for i in 0..<children.count {
+                    do {
+                        let detail = try await itemRepository.detail(of: children[i])
+                        children[i] = detail
+                    } catch {
+                        print("Error: \(error)")
+                    }
+                }
+                
+                DispatchQueue.main.async {
+                    let view = RelatedVideosView(appState: self.appState, items: children) { item in
+                        viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
+                        Task {
+                            await viewController.playNewVideo(newItem: item)
+                        }
+                    }
+                    let vc = UIHostingController(rootView: view)
+                    vc.title = "Series"
+                    self.infoVCs = [vc]
                 }
             }
         }

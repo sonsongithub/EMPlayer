@@ -76,8 +76,25 @@ final class MovieViewController: PlayerViewModel {
             hasError = true
         }
     }
+    
+    @MainActor
+    func getSeason(of item: BaseItem) async throws -> [BaseItem] {
+        let detail = try await itemRepository.detail(of: item)
+        guard let seriesID = detail.seriesId else { throw ContentError.notFoundSeason }
         
-
+        let parent = try await itemRepository.detail(of: seriesID)
+        let children = try await itemRepository.children(of: parent)
+        
+        for theSeason in children {
+            let episodes = try await itemRepository.children(of: theSeason)
+            let episode_ids = episodes.map { $0.id }
+            if episode_ids.contains(detail.id) {
+                return try await itemRepository.children(of: theSeason)
+            }
+        }
+        throw ContentError.notFoundSeason
+    }
+        
     @MainActor func fetch() async {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             Task {

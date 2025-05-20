@@ -34,50 +34,7 @@ private func createMetadataItem(for identifier: AVMetadataIdentifier,
     return item.copy() as! AVMetadataItem
 }
 
-/// SwiftUI 側で渡す関連動画リストビューの例
-struct RelatedVideosView: View {
-    var appState: AppState
-    let items: [BaseItem]
-    var onPush: (BaseItem) -> Void
-    
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 16) {
-                ForEach(items, id: \.id) { item in
-                    // ← ここを Button に変更
-                          Button(action: {
-                              onPush(item)
-                          }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                              AsyncImage(url: item.imageURL(server: appState.server)) { img in
-                                img.resizable().scaledToFill()
-                              } placeholder: {
-                                Color.gray.opacity(0.3)
-                              }
-                              .frame(width: 200, height: 112)
-                              .clipped()
-                              .cornerRadius(8)
-                              .padding(.horizontal, 4)
-                              .padding(.vertical, 4)
 
-                              Text(item.name)
-                                .font(.footnote)
-                                .lineLimit(2)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 4)
-                            }
-                            .frame(width: 200)
-                            .padding(4)
-                          }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-        .padding(.vertical, 8)
-        .background(Color.black.opacity(0.6))
-        .cornerRadius(12)
-    }
-}
 
 final class MovieViewController: PlayerViewModel {
     let appState: AppState
@@ -107,7 +64,9 @@ final class MovieViewController: PlayerViewModel {
                 
                 
                 self.playerItem = AVPlayerItem(asset: asset)
+                #if os(tvOS)
                 self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+                #endif
                 self.player?.play()
             }
             
@@ -147,7 +106,9 @@ final class MovieViewController: PlayerViewModel {
                     
                     
                     self.playerItem = AVPlayerItem(asset: asset)
+#if os(tvOS)
                     self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+                    #endif
                     self.player?.play()
                 }
                 

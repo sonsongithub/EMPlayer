@@ -7,15 +7,14 @@
 
 import SwiftUI
 
-#if os(macOS)
-#else
-
 struct LoginToServerView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
     @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var authService: AuthService
+    
+    @Environment(\.dismiss) private var dismiss
     
     @State private var serverName: String = ""
     @State private var username: String = ""
@@ -33,7 +32,9 @@ struct LoginToServerView: View {
             #if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
             #endif
+            #if !os(macOS)
                 .autocapitalization(.none)
+            #endif
                 .textContentType(.none)
                 .foregroundColor(.primary)
 
@@ -41,7 +42,9 @@ struct LoginToServerView: View {
 #if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
             #endif
+#if !os(macOS)
                 .autocapitalization(.none)
+            #endif
 
             SecureField("Password", text: $password)
 #if !os(tvOS)
@@ -84,6 +87,7 @@ struct LoginToServerView: View {
                     self.appState.token = account.token
 //                    self.isLoading = false
 //                    self.errorMessage = nil
+                    dismiss()
                 }
             } catch {
                 print(error)
@@ -95,13 +99,3 @@ struct LoginToServerView: View {
         }
     }
 }
-
-//#Preview {
-//    let accountManager = AccountManager()
-//    let appState = AppState()
-//    return LoginToServerView()
-//        .environmentObject(accountManager)
-//        .environmentObject(appState)
-//}
-
-#endif

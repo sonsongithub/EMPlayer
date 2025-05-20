@@ -18,10 +18,23 @@ struct AuthenticationSubView: View {
     @EnvironmentObject var drill: DrillDownStore
     
     @State private var selectedServer: ServerInfo? = nil
+    @State private var showLoginSheet = false
+    
+    var header: some View {
+        HStack {
+            Text("Servers")
+            Button("+", action: {
+                showLoginSheet = true
+            })
+            .padding(EdgeInsets(top: 0,leading: 0,bottom: 0,trailing: 0))
+
+            Spacer()
+        }
+    }
     
     var body: some View {
         List {
-            Section(header: Text("Servers")) {
+            Section(header: header) {
                 ForEach(serverDiscovery.servers, id: \.self) { server in
                     Text(server.name)
                         .onTapGesture {
@@ -55,6 +68,15 @@ struct AuthenticationSubView: View {
                 }
             }
         }
+        .sheet(isPresented: $showLoginSheet) {
+                    LoginToServerView()
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(serverDiscovery)
+                        .environmentObject(itemRepository)
+                        .environmentObject(authService)
+                        .environmentObject(drill)
+                }
         .sheet(item: $selectedServer) { server in
             LoginSheetView(selectedServer: $selectedServer)
                 .environmentObject(appState)

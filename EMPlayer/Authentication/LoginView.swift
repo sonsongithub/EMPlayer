@@ -24,6 +24,8 @@ struct LoginView: View {
         self.server = server
     }
     
+    
+#if os(tvOS)
     var body: some View {
         VStack {
             Text("Login: \(String(describing: self.server))")
@@ -31,16 +33,10 @@ struct LoginView: View {
                 .padding()
 
             TextField("Username", text: $username)
-            #if !os(tvOS)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            #endif
                 .autocapitalization(.none)
                 .padding()
 
             SecureField("Password", text: $password)
-#if !os(tvOS)
-    .textFieldStyle(RoundedBorderTextFieldStyle())
-#endif
                 .autocapitalization(.none)
                 .textContentType(.password)
                 .padding()
@@ -57,6 +53,35 @@ struct LoginView: View {
         }
         .navigationTitle("Login to server")
     }
+#else
+    var body: some View {
+        VStack {
+            Text("Login: \(String(describing: self.server))")
+                .font(.title2)
+                .padding()
+
+            TextField("Username", text: $username)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
+
+            SecureField("Password", text: $password)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .textContentType(.password)
+                .padding()
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
+            }
+            Button("Login") {
+                login()
+            }
+            .disabled(username.isEmpty || password.isEmpty || isLoading)
+            .padding()
+        }
+        .navigationTitle("Login to server")
+    }
+#endif
 
     func login() {
         

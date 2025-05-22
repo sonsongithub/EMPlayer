@@ -53,7 +53,7 @@ extension BaseItem {
                                           height: nil,
                                           mediaSource: nil,
                                           mediaStreams: nil,
-                                          indexNumber: nil,
+                                          indexNumber: 1,
                                           isFolder: nil,
                                           type: nil,
                                           userData: nil,

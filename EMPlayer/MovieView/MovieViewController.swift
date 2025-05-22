@@ -125,7 +125,7 @@ final class MovieViewController: PlayerViewModel {
                     self.playerItem = AVPlayerItem(asset: asset)
 #if os(tvOS)
                     self.playerItem?.externalMetadata = createMetadataItems(for: detail)
-                    #endif
+#endif
                     self.player?.play()
                 }
                 

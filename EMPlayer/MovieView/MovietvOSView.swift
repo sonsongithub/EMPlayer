@@ -61,7 +61,7 @@ struct MovietvOSView: View {
                 }
                 
                 DispatchQueue.main.async {
-                    let view = RelatedVideosView(appState: self.appState, items: children) { item in
+                    let view = RelatedVideosView(appState: self.appState, items: children, target: viewController.item) { item in
                         viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
                         Task {
                             await viewController.playNewVideo(newItem: item)

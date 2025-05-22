@@ -26,9 +26,15 @@ struct CardContentView: View {
                     Color.gray.opacity(0.3)
                 }
             VStack(alignment: .leading) {
-                Text(item.name)
-                    .font(.body)
-                    .lineLimit(2)
+                if let index = item.indexNumber {
+                    Text("\(index). \(item.name)")
+                        .font(.body)
+                        .lineLimit(2)
+                } else {
+                    Text(item.name)
+                        .font(.body)
+                        .lineLimit(2)
+                }
                 Text(item.overview ?? "")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -42,26 +48,36 @@ struct CardContentView: View {
 struct RelatedVideosView: View {
     var appState: AppState
     let items: [BaseItem]
+    var target: BaseItem?
     var onPush: (BaseItem) -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 32) {
-                ForEach(items, id: \.id) { item in
-                    Button {
-                        onPush(item)
-                    } label: {
-                        CardContentView(appState: appState, item: item)
-                            .padding([.leading, .top, .bottom], 16)
-                            .padding(.trailing, 20)
-                            .frame(height: 230)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 32) {
+                    ForEach(items, id: \.id) { item in
+                        Button {
+                            onPush(item)
+                        } label: {
+                            CardContentView(appState: appState, item: item)
+                                .padding([.leading, .top, .bottom], 16)
+                                .padding(.trailing, 20)
+                                .frame(height: 230)
+                        }
+                        .frame(width: 800, height: 230)     // this height is magic number
                     }
-                    .frame(width: 800, height: 230)     // this height is magic number
                 }
             }
+            .scrollClipDisabled()
+            .buttonStyle(.card)
+            .onAppear {
+                    if let target = target {
+                        withAnimation {
+                            proxy.scrollTo(target.id, anchor: .center)
+                        }
+                    }
+            }
         }
-        .scrollClipDisabled()
-        .buttonStyle(.card)
     }
 }
 

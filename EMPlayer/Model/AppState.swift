@@ -11,7 +11,13 @@ enum AppStateError: Error {
     case notReady
 }
 
-class AppState: ObservableObject {
+protocol AuthProviding: AnyObject {
+    var server: String?  { get }
+    var token:  String? { get }
+    var userID: String? { get }
+}
+
+class AppState: ObservableObject, AuthProviding {
     
     // Caution, this is not a safety code.
     // token should be stored in Keychain.
@@ -27,6 +33,8 @@ class AppState: ObservableObject {
     
     @Published var selectedItem: BaseItem? = nil
     @Published var searchQuery: String? = nil
+    
+    @Published var playingItem: ItemNode? = nil
 
     init() {
         UserDefaults.standard.removeObject(forKey: "server")

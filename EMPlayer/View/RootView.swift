@@ -10,74 +10,36 @@ import SwiftUI
 #if os(macOS)
 #else
 
-class RootViewController: ObservableObject {
-    let appState: AppState
-    private let apiClient = APIClient()
-    
-    @Published var items: [BaseItem] = []
-    
-    init(appState: AppState) {
-        self.appState = appState
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            self.items = [BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy]
-        }
-    }
-    
-    @MainActor
-    func fetch() async {
-        do {
-            let (server, token, userID) = try appState.get()
-            self.items = try await apiClient.fetchUserView(server: server, userID: userID, token: token)
-        } catch {
-            self.appState.logout()
-            print(error)
-        }
-    }
-    
-}
+struct ItemNodeView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var drill: DrillDownStore
 
-struct RootViewItemView: View {
-    let item: BaseItem
-    let appState: AppState
-    let width = CGFloat(200)
-    let height = CGFloat(150)
+    @ObservedObject var node: ItemNode
+
     var body: some View {
-        GeometryReader { geometry in
-            NavigationLink(destination: item.nextView(appState: appState)) {
-                HStack {
-                    if let url = item.imageURL(server: appState.server) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 200, height: 150)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 200, height: 150)
-                                    .foregroundColor(.gray)
-                            @unknown default:
-                                EmptyView()
-                            }
+        List {
+            ForEach(node.children, id: \.id) { child in
+                NavigationLink(value: child) {
+                    Text(child.display())
+                }
+            }
+        }
+        .onAppear {
+            Task {
+                switch node.item {
+                case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
+                    Task {
+                        let items = try await self.itemRepository.children(of: base)
+                        print("items: \(items.count)")
+                        let children = items.map({ ItemNode(item: $0)})
+                        DispatchQueue.main.async {
+                            node.children = children
                         }
-                        .frame(width: 200, height: 150)
-                    } else {
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 200, height: 150)
-                            .foregroundColor(.gray)
                     }
-                    Text(item.name)
-                        .font(.title2)
-                        .dynamicTypeSize(.xSmall)
-                }.padding(.vertical, 5)
+                default:
+                    do {}
+                }
             }
         }
     }
@@ -85,33 +47,26 @@ struct RootViewItemView: View {
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var viewController: RootViewController
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
+    @EnvironmentObject var drill: DrillDownStore
+    
     @State private var showAuthSheet = false
     
-    init(rootViewController: RootViewController) {
-        _viewController = StateObject(wrappedValue: rootViewController)
-    }
-    
     var body: some View {
-        NavigationStack {
-            List(viewController.items, id: \.id) { item in
-                RootViewItemView(item: item, appState: appState).frame(height: 150)
-            }.onAppear {
-                Task {
-                    await viewController.fetch()
-                }
-            }
-            .sheet(isPresented: $showAuthSheet) {
-                AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
-            }
-            .onChange(of: appState.isAuthenticated) {
-                if appState.isAuthenticated {
-                    Task {
-                        await viewController.fetch()
+        NavigationStack() {
+            List {
+                if let root = drill.root {
+                    ForEach(root.children, id: \.id) { child in
+                        NavigationLink(value: child) {
+                            Text(child.display())
+                        }
                     }
                 }
             }
-            .navigationTitle(appState.server ?? "")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
@@ -121,15 +76,90 @@ struct RootView: View {
                     }
                 }
             }
+            .navigationTitle(appState.server ?? "")
+            .navigationDestination(for: ItemNode.self) { node in
+                switch node.item {
+                case let .collection(base):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                        .navigationTitle(base.name)
+                case let .series(base):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                        .navigationTitle(base.name)
+                case let .boxSet(base):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                        .navigationTitle(base.name)
+                case let .season(base):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                        .navigationTitle(base.name)
+                case .movie(let base), .episode(let base):
+#if os(iOS)
+                    MovieiOSView(item: base,
+                                 appState: appState,
+                                 itemRepository: itemRepository,) {
+                        appState.playingItem = nil
+                    }
+                                 .environmentObject(itemRepository)
+                                 .environmentObject(drill)
+                                 .environmentObject(appState)
+                                 .environmentObject(accountManager)
+                                 .environmentObject(authService)
+#elseif os(tvOS)
+                    MovietvOSView(item: base,
+                                 appState: appState,
+                                 itemRepository: itemRepository,) {
+                        appState.playingItem = nil
+                    }
+                                 .environmentObject(itemRepository)
+                                 .environmentObject(drill)
+                                 .environmentObject(appState)
+                                 .environmentObject(accountManager)
+                                 .environmentObject(authService)
+#endif
+                default:
+                    Text("error")
+                }
+            }
         }
-        
+        .onChange(of: appState.token) {
+            if appState.isAuthenticated {
+                drill.reset()
+                Task {
+                    let items = try await itemRepository.root()
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                    DispatchQueue.main.async {
+                        drill.root = ItemNode(item: nil, children: children)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showAuthSheet) {
+            AuthenticationView(isPresented: $showAuthSheet)
+                .environmentObject(appState)
+                .environmentObject(accountManager)
+                .environmentObject(authService)
+        }
     }
-}
-
-#Preview {
-    let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
-    let rootViewController = RootViewController(appState: appState)
-    RootView(rootViewController: rootViewController).environmentObject(appState)
 }
 
 #endif

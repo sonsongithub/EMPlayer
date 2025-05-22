@@ -24,7 +24,7 @@ struct ServerInfo: Codable, Identifiable, Hashable {
 }
 
 class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegate {
-    @Published var servers: [ServerInfo] = []//[ServerInfo(address: "192.168.64.2:8096", id: "1", name: "Emby Server")]
+    @Published var servers: [ServerInfo] = [ServerInfo(address: "http://192.168.64.2:8096", id: "1", name: "Emby Server")]
     var udpSocket: GCDAsyncUdpSocket!
 
     override init() {
@@ -55,6 +55,7 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
     func sendBroadcastMessage() {
         print(#function)
         self.servers.removeAll()
+        self.servers = [ServerInfo(address: "http://192.168.64.2:8096", id: "1", name: "Emby Server")]
         
         let message = "who is EmbyServer?"
         let data = message.data(using: .utf8)!

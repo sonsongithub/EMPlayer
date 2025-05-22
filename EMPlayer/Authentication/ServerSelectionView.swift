@@ -14,12 +14,13 @@ import KeychainAccess
 struct ServerSelectionView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
     @State private var selectedServer: String?
     @State private var navigateToLogin = false
-    @ObservedObject var serverDiscovery = ServerDiscoveryModel()
     
-    let apiClient = APIClient()
-
     @State private var showAlert = false
     @State private var showErrorAlert = false
     
@@ -38,22 +39,10 @@ struct ServerSelectionView: View {
                     ForEach(accountManager.names, id: \.self) { name in
                         Button(accountManager.displayName(for: name)) {
                             if let account = accountManager.accounts[name] {
-                                Task {
-                                    do {
-                                        let user = try await self.apiClient.getUserInfo(server: account.serverAddress, userID: account.userID, token: account.token)
-                                        if user.id == account.userID {
-                                            appState.server = account.serverAddress
-                                            appState.token = account.token
-                                            appState.userID = account.userID
-                                            appState.isAuthenticated = true
-                                        } else {
-                                            showErrorAlert = true
-                                        }
-                                    } catch {
-                                        showErrorAlert = true
-                                        print(error)
-                                    }
-                                }
+                                appState.server = account.server
+                                appState.token = account.token
+                                appState.userID = account.userID
+                                appState.isAuthenticated = true
                             }
                         }
                     }
@@ -61,7 +50,10 @@ struct ServerSelectionView: View {
             }
             .navigationTitle("Login")
             .navigationDestination(for: ServerInfo.self) { value in
-                LoginView(server: value.address).environmentObject(accountManager).environmentObject(appState)
+                LoginView(server: value.address)
+                    .environmentObject(accountManager)
+                    .environmentObject(appState)
+                    .environmentObject(authService)
             }
             .alert("Can not login to the server.", isPresented: $showErrorAlert, actions: {
                 Button("OK", role: .cancel) {}
@@ -89,7 +81,9 @@ struct ServerSelectionView: View {
                 }
             }
             .navigationDestination(isPresented: $isNavigating) {
-                LoginToServerView().environmentObject(accountManager).environmentObject(appState)
+                LoginToServerView()
+                    .environmentObject(accountManager)
+                    .environmentObject(appState)
             }
         }
     }

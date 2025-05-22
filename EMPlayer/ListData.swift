@@ -26,7 +26,7 @@ class UserViewsLoader : ObservableObject {
             completion(false, nil)
             return
         }
-        
+    
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue(token, forHTTPHeaderField: "X-Emby-Token")

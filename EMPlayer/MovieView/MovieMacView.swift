@@ -1,0 +1,105 @@
+//
+//  MovieMacView.swift
+//  EMPlayer
+//
+//  Created by sonson on 2025/05/18.
+//
+
+
+import AVKit
+import os
+import SwiftUI
+
+#if os(macOS)
+
+struct WindowAccessor: NSViewRepresentable {
+    var callback: (NSWindow) -> Void
+    func makeNSView(context _: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                callback(window)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_: NSView, context _: Context) {}
+}
+
+struct MovieMacView: View {
+    @StateObject private var vm: MovieViewController
+    var onClose: () -> Void
+    // 既存ウィンドウ値保持
+    @State private var originalTitleVisibility: NSWindow.TitleVisibility = .visible
+    @State private var originalContainsFullSize = false
+    @State private var originalToolbarVisibility = false
+    @State private var originalTransparent = false
+    @State private var originalMovableByBG = false
+    @State private var originalSeparatorStyle: NSTitlebarSeparatorStyle = .automatic
+
+    init(item: BaseItem, app: AppState, repo: ItemRepository, onClose: @escaping () -> Void) {
+        _vm = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
+        self.onClose = onClose
+    }
+
+    var body: some View {
+        CustomVideoPlayerView(playerViewModel: vm, onClose: onClose)
+            .overlay(
+                WindowAccessor { window in
+                    if originalTitleVisibility == .visible {
+                        originalTitleVisibility = window.titleVisibility
+                        originalContainsFullSize = window.styleMask.contains(.fullSizeContentView)
+                        originalToolbarVisibility = window.toolbar?.isVisible ?? false
+                        originalSeparatorStyle = window.titlebarSeparatorStyle
+                        originalTransparent = window.titlebarAppearsTransparent
+                        originalMovableByBG = window.isMovableByWindowBackground
+                    }
+                    applyFullOverlay(to: window)
+                }
+                .allowsHitTesting(false)
+            ).onChange(of: vm.isPipActive) {
+                if vm.isPipActive { vm.showControls = false }
+            }
+            .onDisappear {
+                restoreWindow()
+            }
+            .task {
+                await vm.fetch()
+            }
+    }
+
+    private func applyFullOverlay(to window: NSWindow) {
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.styleMask.insert(.fullSizeContentView)
+        window.toolbar?.isVisible = false
+        window.titlebarSeparatorStyle = .none
+        window.isMovableByWindowBackground = false
+    }
+
+    private func restoreWindow() {
+        guard let window = NSApplication.shared.keyWindow else { return }
+
+        window.titleVisibility            = originalTitleVisibility
+        window.titlebarAppearsTransparent = originalTransparent
+        window.isMovableByWindowBackground = originalMovableByBG
+
+        if !originalContainsFullSize {
+            window.styleMask.remove(.fullSizeContentView)
+        }
+
+        // ツールバー可視状態を戻す
+        window.toolbar?.isVisible = originalToolbarVisibility
+
+        // セパレータも復帰させる
+        window.titlebarSeparatorStyle = originalSeparatorStyle
+    }
+}
+
+#Preview {
+    MovieMacView(item: BaseItem.dummy, app: AppState(), repo: ItemRepository(authProviding: AppState())) {}
+}
+
+#endif

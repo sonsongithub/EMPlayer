@@ -12,13 +12,19 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @EnvironmentObject var appState: AppState
-    let accountManager = AccountManager()
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     
-    @Binding var isPresented: Bool  // シートの表示状態を制御
+    @Binding var isPresented: Bool
     
     var body: some View {
         NavigationStack {
-            ServerSelectionView().environmentObject(appState).environmentObject(accountManager)
+            ServerSelectionView()
+                .environmentObject(appState)
+                .environmentObject(accountManager)
+                .environmentObject(authService)
+                .environmentObject(serverDiscovery)
                 .navigationTitle("Select server")
                 .onChange(of: appState.server) {
                     print("server updated")
@@ -52,10 +58,10 @@ struct AuthenticationView: View {
     }
 }
 
-#Preview {
-    @State var showAuthSheet = false
-    let appState = AppState()
-    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
-}
+//#Preview {
+//    @State var showAuthSheet = false
+//    let appState = AppState()
+//    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
+//}
 
 #endif

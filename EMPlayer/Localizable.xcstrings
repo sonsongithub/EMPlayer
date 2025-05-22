@@ -14,25 +14,25 @@
         }
       }
     },
-    "Are you sure to delete your history?" : {
+    "+" : {
 
     },
-    "Can not load movie." : {
+    "Are you sure to delete your history?" : {
 
     },
     "Can not login to the server." : {
 
     },
+    "Can't load" : {
+
+    },
     "Cancel" : {
 
     },
-    "Close" : {
-
-    },
-    "Current Server" : {
-
-    },
     "Delete" : {
+
+    },
+    "error" : {
 
     },
     "Found servers" : {
@@ -41,7 +41,7 @@
     "History" : {
 
     },
-    "Loading..." : {
+    "Loading…" : {
 
     },
     "login" : {
@@ -59,19 +59,19 @@
     "Login: %@" : {
 
     },
+    "No server selected" : {
+
+    },
+    "None" : {
+
+    },
     "OK" : {
 
     },
     "Password" : {
 
     },
-    "Please enter a search query." : {
-
-    },
-    "Please login to a server." : {
-
-    },
-    "Search..." : {
+    "Root" : {
 
     },
     "Select server" : {
@@ -87,12 +87,6 @@
 
     },
     "Username" : {
-
-    },
-    "Video Player" : {
-
-    },
-    "検索..." : {
 
     }
   },

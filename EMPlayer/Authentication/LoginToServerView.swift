@@ -7,12 +7,14 @@
 
 import SwiftUI
 
-#if os(macOS)
-#else
-
 struct LoginToServerView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
+    @Environment(\.dismiss) private var dismiss
     
     @State private var serverName: String = ""
     @State private var username: String = ""
@@ -20,39 +22,34 @@ struct LoginToServerView: View {
     @State private var isLoggingIn: Bool = false
     @State private var loginError: String?
     
-    let apiClient = APIClient()
-
     var body: some View {
         VStack(spacing: 20) {
             Text("Login")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            // target tvOS
-#if os(tvOS)
             TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
+            #if !os(tvOS)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
+            #if !os(macOS)
                 .autocapitalization(.none)
+            #endif
                 .textContentType(.none)
                 .foregroundColor(.primary)
 
             TextField("User name", text: $username)
+#if !os(tvOS)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            #endif
+#if !os(macOS)
                 .autocapitalization(.none)
+            #endif
 
             SecureField("Password", text: $password)
-#else
-            TextField("", text: $serverName, prompt: Text(verbatim: "https://192.168.10.1:8096"))
+#if !os(tvOS)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                .autocapitalization(.none)
-                .textContentType(.none)
-                .foregroundColor(.primary)
-
-            TextField("User name", text: $username)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .autocapitalization(.none)
-
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-#endif
+            #endif
 
             if let error = loginError {
                 Text(error)
@@ -77,18 +74,20 @@ struct LoginToServerView: View {
     func login() {
 //        isLoading = true
 //        errorMessage = nil
+        
         Task {
             do {
-                let authenticationResponse = try await self.apiClient.login(server: serverName, username: username, password: password)
-                let account = Account(serverAddress: serverName, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
+                let authenticationResponse = try await self.authService.login(server: serverName, user: username, pass: password)
+                let account = Account(server: serverName, username: authenticationResponse.user.name, userID: authenticationResponse.user.id, token: authenticationResponse.accessToken)
                 DispatchQueue.main.async {
                     self.accountManager.saveAccount(account)
                     self.appState.isAuthenticated = true
                     self.appState.userID = account.userID
-                    self.appState.server = account.serverAddress
+                    self.appState.server = account.server
                     self.appState.token = account.token
 //                    self.isLoading = false
 //                    self.errorMessage = nil
+                    dismiss()
                 }
             } catch {
                 print(error)
@@ -100,13 +99,3 @@ struct LoginToServerView: View {
         }
     }
 }
-
-#Preview {
-    let accountManager = AccountManager()
-    let appState = AppState()
-    return LoginToServerView()
-        .environmentObject(accountManager)
-        .environmentObject(appState)
-}
-
-#endif

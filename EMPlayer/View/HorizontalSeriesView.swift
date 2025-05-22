@@ -16,7 +16,7 @@ import SwiftUI
 
 class HorizontalSeriesModel : ObservableObject {
     let appState: AppState
-    private let apiClient = APIClient()
+//    private let apiClient = APIClient()
     var currentItem: BaseItem
     @Published var seasons: [BaseItem] = []
     
@@ -27,21 +27,21 @@ class HorizontalSeriesModel : ObservableObject {
     
     @MainActor
     func fetch() async {
-        do {
-            let (server, token, userID) = try appState.get()
-            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
-            DispatchQueue.main.async {
-                self.seasons = items
-            }
-        } catch {
-            print(error)
-        }
+//        do {
+//            let (server, token, userID) = try appState.get()
+//            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
+//            DispatchQueue.main.async {
+//                self.seasons = items
+//            }
+//        } catch {
+//            print(error)
+//        }
     }
 }
 
 class HorizontalSeasonModel : ObservableObject {
     let appState: AppState
-    private let apiClient = APIClient()
+//    private let apiClient = APIClient()
     var currentItem: BaseItem
     
     @Published var episodes: [BaseItem] = []
@@ -53,24 +53,24 @@ class HorizontalSeasonModel : ObservableObject {
     
     @MainActor
     func fetch() async {
-        do {
-            let (server, token, userID) = try appState.get()
-            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
-            DispatchQueue.main.async {
-                self.episodes = items
-                
-                Task {
-                    
-                    for i in (0..<self.episodes.count) {
-                        let obj = try await self.apiClient.fetchItemDetail(server: server, userID: userID, token: token, of: self.episodes[i])
-                        self.episodes[i] = obj
-                    }
-                }
-                
-            }
-        } catch {
-            print(error)
-        }
+//        do {
+//            let (server, token, userID) = try appState.get()
+//            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
+//            DispatchQueue.main.async {
+//                self.episodes = items
+//                
+//                Task {
+//                    
+//                    for i in (0..<self.episodes.count) {
+//                        let obj = try await self.apiClient.fetchItemDetail(server: server, userID: userID, token: token, of: self.episodes[i])
+//                        self.episodes[i] = obj
+//                    }
+//                }
+//                
+//            }
+//        } catch {
+//            print(error)
+//        }
     }
 }
 

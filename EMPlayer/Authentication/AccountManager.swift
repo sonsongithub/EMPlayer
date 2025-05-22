@@ -10,6 +10,7 @@ import KeychainAccess
 
 typealias AccountKey = String
 
+@MainActor
 class AccountManager: ObservableObject {
     private let keychain = Keychain(service: "com.sonson.EMPlayer")
 
@@ -19,8 +20,7 @@ class AccountManager: ObservableObject {
 
     init() {
         print("\(type(of: self)) \(#function)")
-        loadAccounts()
-        print(accounts)
+        loadAccounts()  
     }
     
     deinit {
@@ -31,40 +31,52 @@ class AccountManager: ObservableObject {
         guard let account = accounts[key] else {
             return ""
         }
-        return "\(account.username)@\(account.serverAddress)"
+        return "\(account.username)@\(account.server)"
     }
 
     func saveAccount(_ account: Account) {
-        let key = "\(account.serverAddress)|\(account.username)"
+        let key = "\(account.server)|\(account.username)"
         if let data = try? JSONEncoder().encode(account) {
             keychain[data: key] = data
         }
-        loadAccounts() // データを保存したら再読み込み
+        loadAccounts()
     }
 
     func loadAccounts() {
         var newAccounts: [AccountKey: Account] = [:]
-        for key in (try? keychain.allKeys()) ?? [] {
-            if let data = keychain[data: key],
-               let account = try? JSONDecoder().decode(Account.self, from: data) {
-                newAccounts[key] = account
+        for key in keychain.allKeys() {
+            if let data = keychain[data: key] {
+                do {
+                    let account = try JSONDecoder().decode(Account.self, from: data)
+                    newAccounts[key] = account
+                } catch {
+                    print("Failed to decode account data for key \(key): \(error)")
+                }
             }
         }
-        DispatchQueue.main.async {
-            self.accounts = newAccounts
-            self.names = newAccounts.values.map { "\($0.serverAddress)|\($0.username)" }
-        }
+        self.accounts = newAccounts
+        self.names = newAccounts.values.map { "\($0.server)|\($0.username)" }
     }
 
     func deleteAccount(server: String, username: String) {
         let key = "\(server)|\(username)"
-        try? keychain.remove(key)
-        loadAccounts() // 削除後に再読み込み
+        do {
+            try keychain.remove(key)
+        } catch {
+            print(error)
+            print("\(key) has not been removed.")
+        }
+        loadAccounts()
     }
     
     func deleteAll() {
-        for key in (try? keychain.allKeys()) ?? [] {
-            try? keychain.remove(key)
+        for key in keychain.allKeys() {
+            do {
+                try keychain.remove(key)
+            } catch {
+                print(error)
+                print("\(key) has not been removed.")
+            }
         }
         loadAccounts()
     }

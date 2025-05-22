@@ -17,43 +17,40 @@ enum APIClientError: Error {
 }
 
 class APIClient {
+    let authProviding: AuthProviding
+    
+    init(authProviding: AuthProviding) {
+        self.authProviding = authProviding
+    }
+        
     let decoder = JSONDecoder()
     
-    func login(server: String, username: String, password: String) async throws -> AuthenticationResponse {
-        guard let urlComponents = URLComponents(string: "\(server)/Users/AuthenticateByName") else {
+    func userInfo() async throws -> User {
+        
+        let (server, token, userID) = try getBasicInfomation()
+        
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)") else {
             throw APIClientError.cannotCreateURL
         }
         guard let url = urlComponents.url else {
             throw APIClientError.cannotCreateURL
         }
         
-        let payload: [String: Any] = [
-            "Username": username,
-            "Pw": password
-        ]
-        
-        let headers = [
-            "Content-Type": "application/json",
-            "Authorization": "Emby UserId=\"sonson\", Client=\"SwiftEmby\", Device=\"iOS\", DeviceId=\"sonson\", Version=\"1.0.0.0\""
-        ]
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.allHTTPHeaderFields = headers
-        
-        let jsonData = try JSONSerialization.data(withJSONObject: payload, options: [])
-        request.httpBody = jsonData
+        request.httpMethod = "GET"
+        request.setValue(token, forHTTPHeaderField: "X-Emby-Token")
         
         let (data, response) = try await URLSession.shared.data(for: request)
-        
-        if let text = String(data: data, encoding: .utf8) {
-            print(text)
-        }
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw APIClientError.unauthorized
         }
         
-        return try decoder.decode(AuthenticationResponse.self, from: data)
+        if let text = String(data: data, encoding: .utf8) {
+            print(text)
+        }
+        
+        return try decoder.decode(User.self, from: data)
     }
     
     func getUserInfo(server: String, userID: String, token: String) async throws -> User {
@@ -80,7 +77,9 @@ class APIClient {
         return try decoder.decode(User.self, from: data)
     }
 
-    func fetchUserView(server: String, userID: String, token: String, with query: [String:String]=[:]) async throws -> [BaseItem] {
+    func fetchUserView(with query: [String:String]=[:]) async throws -> [BaseItem] {
+        
+        let (server, token, userID) = try getBasicInfomation()
         
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Views") else {
             throw APIClientError.cannotCreateURL
@@ -156,9 +155,10 @@ class APIClient {
         let object = try decoder.decode(QueryResult<BaseItem>.self, from: data)
         return object.items
     }
-
     
-    func fetchItems(server: String, userID: String, token: String, of parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
+    func fetchItems(parent: BaseItem, with query: [String:String]=[:]) async throws -> [BaseItem] {
+        
+        let (server, token, userID) = try getBasicInfomation()
         
         guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items") else {
             throw APIClientError.cannotCreateURL
@@ -194,9 +194,27 @@ class APIClient {
         return object.items
     }
     
-    func fetchItemDetail(server: String, userID: String, token: String, of item: BaseItem) async throws -> BaseItem {
+    func getBasicInfomation() throws -> (String, String, String) {
         
-        guard var urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(item.id)") else {
+        guard let server = authProviding.server else {
+            throw APIClientError.invalidURL
+        }
+        guard let token = authProviding.token else {
+            throw APIClientError.tokenIsNil
+        }
+        guard let userID = authProviding.userID else {
+            throw APIClientError.invalidUser
+        }
+        
+        return (server, token, userID)
+    }
+    
+//    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
+        
+    func fetchItemDetail(of itemID: String) async throws -> BaseItem {
+        let (server, token, userID) = try getBasicInfomation()
+        
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(itemID)") else {
             throw APIClientError.cannotCreateURL
         }
         guard let url = urlComponents.url else {

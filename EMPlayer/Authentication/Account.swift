@@ -10,7 +10,7 @@ import SwiftUI
 import KeychainAccess
 
 struct Account: Codable {
-    let serverAddress: String
+    let server: String
     let username: String
     let userID: String
     var token: String

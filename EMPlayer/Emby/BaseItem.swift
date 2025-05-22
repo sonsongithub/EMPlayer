@@ -12,7 +12,11 @@
 import Foundation
 import SwiftUI
 
-struct BaseItem: Codable {
+struct BaseItem: Codable, Equatable {
+    static func == (lhs: BaseItem, rhs: BaseItem) -> Bool {
+        lhs.id == rhs.id
+    }
+    
     let name: String
     let originalTitle: String?
     let id: String
@@ -183,19 +187,31 @@ struct BaseItem: Codable {
         }
     }
     #if os(macOS)
+//    func nextView(appState: AppState) -> some View {
+//        if self.type == .collectionFolder || self.type == .boxSet || self.type == .season {
+//            let controller = CollectionViewController(currentItem: self, appState: appState)
+//            CollectionView(controller: controller).environmentObject(appState)
+//        } else if self.type == .series {
+//            let controller = SeriesViewController(currentItem: self, appState: appState)
+//            SeriesView(controller: controller).environmentObject(appState)
+//        } else {
+//            let controller = MovieViewController(currentItem: self, appState: appState)
+//            MovieView(controller: controller).environmentObject(appState)
+//        }
+//    }
     #else
-    @ViewBuilder
-    func nextView(appState: AppState) -> some View {
-        if self.type == .collectionFolder || self.type == .boxSet || self.type == .season {
-            let controller = CollectionViewController(currentItem: self, appState: appState)
-            CollectionView(controller: controller).environmentObject(appState)
-        } else if self.type == .series {
-            let controller = SeriesViewController(currentItem: self, appState: appState)
-            SeriesView(controller: controller).environmentObject(appState)
-        } else {
-            let controller = MovieViewController(currentItem: self, appState: appState)
-            MovieView(controller: controller).environmentObject(appState)
-        }
-    }
+//    @ViewBuilder
+//    func nextView(appState: AppState) -> some View {
+//        if self.type == .collectionFolder || self.type == .boxSet || self.type == .season {
+//            let controller = CollectionViewController(currentItem: self, appState: appState)
+//            CollectionView(controller: controller).environmentObject(appState)
+//        } else if self.type == .series {
+//            let controller = SeriesViewController(currentItem: self, appState: appState)
+//            SeriesView(controller: controller).environmentObject(appState)
+//        } else {
+//            let controller = SeriesViewController(currentItem: self, appState: appState)
+//            SeriesView(controller: controller).environmentObject(appState)
+//        }
+//    }
     #endif
 }

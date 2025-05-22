@@ -20,6 +20,7 @@ struct MovietvOSView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
+    @State var tabBarVisibility: Visibility = .visible
 
     /// ここでホスティングコントローラを @State で保持
     @State private var infoVCs: [UIViewController] = []
@@ -38,8 +39,12 @@ struct MovietvOSView: View {
         .onDisappear {
             viewController.player?.pause()
             viewController.player = nil
+        }.toolbar(tabBarVisibility, for: .tabBar)
+        .onDisappear() {
+            tabBarVisibility = .visible
         }
         .onAppear {
+            tabBarVisibility = .hidden
             Task {
                 await viewController.fetch()
                 

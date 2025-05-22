@@ -9,7 +9,7 @@ import SwiftUI
 import KeychainAccess
 
 #if os(macOS)
-#else
+#elseif os(iOS)
 
 struct ServerSelectionView: View {
     @EnvironmentObject var appState: AppState
@@ -89,10 +89,80 @@ struct ServerSelectionView: View {
     }
 }
 
-#Preview {
-    @Previewable @State var showAuthSheet = false
-    let appState = AppState()
-    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
+#elseif os(tvOS)
+
+struct ServerSelectionView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
+    @State private var selectedServer: String?
+    @State private var navigateToLogin = false
+    
+    @State private var showAlert = false
+    @State private var showErrorAlert = false
+    
+    @State private var isNavigating = false
+    
+    var header: some View {
+        HStack {
+            Text("Servers")
+            Spacer()
+            Button("+", action: {
+                isNavigating = true
+            })
+            .padding(EdgeInsets(top: 0,leading: 0,bottom: 0,trailing: 0))
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section(header: header) {
+                    ForEach(serverDiscovery.servers, id: \.self) { server in
+                        NavigationLink(value: server) {
+                            Text(server.name)
+                        }
+                    }
+                }
+                Section(header: Text("History")) {
+                    ForEach(accountManager.names, id: \.self) { name in
+                        Button(accountManager.displayName(for: name)) {
+                            if let account = accountManager.accounts[name] {
+                                appState.server = account.server
+                                appState.token = account.token
+                                appState.userID = account.userID
+                                appState.isAuthenticated = true
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationDestination(for: ServerInfo.self) { value in
+                LoginView(server: value.address)
+                    .environmentObject(accountManager)
+                    .environmentObject(appState)
+                    .environmentObject(authService)
+            }
+            .alert("Can not login to the server.", isPresented: $showErrorAlert, actions: {
+                Button("OK", role: .cancel) {}
+            })
+            .alert("Are you sure to delete your history?", isPresented: $showAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { accountManager.deleteAll() }
+            } message: {
+                Text("This operation cannot be undone.")
+            }
+            .navigationDestination(isPresented: $isNavigating) {
+                LoginToServerView()
+                    .environmentObject(accountManager)
+                    .environmentObject(appState)
+            }
+        }
+    }
 }
+
 
 #endif

@@ -45,6 +45,10 @@ struct ItemNodeView: View {
     }
 }
 
+#endif
+
+#if os(iOS)
+
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
@@ -112,7 +116,6 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case .movie(let base), .episode(let base):
-#if os(iOS)
                     MovieiOSView(item: base,
                                  appState: appState,
                                  itemRepository: itemRepository,) {
@@ -123,18 +126,6 @@ struct RootView: View {
                                  .environmentObject(appState)
                                  .environmentObject(accountManager)
                                  .environmentObject(authService)
-#elseif os(tvOS)
-                    MovietvOSView(item: base,
-                                 appState: appState,
-                                 itemRepository: itemRepository,) {
-                        appState.playingItem = nil
-                    }
-                                 .environmentObject(itemRepository)
-                                 .environmentObject(drill)
-                                 .environmentObject(appState)
-                                 .environmentObject(accountManager)
-                                 .environmentObject(authService)
-#endif
                 default:
                     Text("error")
                 }
@@ -158,6 +149,153 @@ struct RootView: View {
                 .environmentObject(appState)
                 .environmentObject(accountManager)
                 .environmentObject(authService)
+        }
+    }
+}
+
+#elseif os(tvOS)
+
+struct TVRootView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var drill: DrillDownStore
+    
+    var body: some View {
+        TabView(selection: $appState.selectedTab) {
+            if self.appState.isAuthenticated {
+                RootView()
+                    .environmentObject(appState)
+                    .environmentObject(itemRepository)
+                    .environmentObject(drill)
+                    .environmentObject(accountManager)
+                    .environmentObject(serverDiscovery)
+                    .environmentObject(authService)
+                    .tag(0)
+                    .tabItem {
+                        Image(systemName: "house")
+                        Text("Home")
+                    }
+                Text("a")
+                    .tag(1)
+                    .tabItem {
+                        Image(systemName: "magnifyingglass")
+                        Text("Search")
+                    }
+            }
+            AuthenticationView()
+                .environmentObject(appState)
+                .environmentObject(itemRepository)
+                .environmentObject(drill)
+                .environmentObject(accountManager)
+                .environmentObject(serverDiscovery)
+                .environmentObject(authService)
+                .tag(2)
+                .tabItem {
+                    Image(systemName: "person")
+                    Text("Account")
+                }
+        }
+        .onChange(of: appState.isAuthenticated) {
+            if appState.isAuthenticated {
+                appState.selectedTab = 0
+            }
+        }
+    }
+}
+
+struct RootView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var drill: DrillDownStore
+    
+    var body: some View {
+        NavigationStack() {
+            List {
+                if let root = drill.root {
+                    ForEach(root.children, id: \.id) { child in
+                        NavigationLink(value: child) {
+                            Text(child.display())
+                        }
+                    }
+                }
+            }
+            .navigationDestination(for: ItemNode.self) { node in
+                switch node.item {
+                case .collection(_):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                case .series(_):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                case .boxSet(_):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                case .season(_):
+                    ItemNodeView(node: node)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environmentObject(appState)
+                        .environmentObject(accountManager)
+                        .environmentObject(authService)
+                case .movie(let base), .episode(let base):
+                    MovietvOSView(item: base,
+                                 appState: appState,
+                                 itemRepository: itemRepository,) {
+                        appState.playingItem = nil
+                    }
+                                 .environmentObject(itemRepository)
+                                 .environmentObject(drill)
+                                 .environmentObject(appState)
+                                 .environmentObject(accountManager)
+                                 .environmentObject(authService)
+                default:
+                    Text("error")
+                }
+            }
+        }
+        .onAppear() {
+            if appState.isAuthenticated {
+                drill.reset()
+                Task {
+                    let items = try await itemRepository.root()
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                    DispatchQueue.main.async {
+                        drill.root = ItemNode(item: nil, children: children)
+                    }
+                }
+            }
+        }
+        .onChange(of: appState.token) {
+            if appState.isAuthenticated {
+                drill.reset()
+                Task {
+                    let items = try await itemRepository.root()
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                    DispatchQueue.main.async {
+                        drill.root = ItemNode(item: nil, children: children)
+                    }
+                }
+            }
         }
     }
 }

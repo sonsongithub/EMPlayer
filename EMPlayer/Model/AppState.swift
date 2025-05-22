@@ -35,6 +35,8 @@ class AppState: ObservableObject, AuthProviding {
     @Published var searchQuery: String? = nil
     
     @Published var playingItem: ItemNode? = nil
+    
+    @Published var selectedTab: Int = 0
 
     init() {
         UserDefaults.standard.removeObject(forKey: "server")

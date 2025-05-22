@@ -8,7 +8,8 @@
 import SwiftUI
 
 #if os(macOS)
-#else
+
+#elseif os(iOS)
 
 struct AuthenticationView: View {
     @EnvironmentObject var appState: AppState
@@ -58,10 +59,38 @@ struct AuthenticationView: View {
     }
 }
 
-//#Preview {
-//    @State var showAuthSheet = false
-//    let appState = AppState()
-//    AuthenticationView(isPresented: $showAuthSheet).environmentObject(appState)
-//}
+#elseif os(tvOS)
+
+struct AuthenticationView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    
+    var body: some View {
+        NavigationStack {
+            ServerSelectionView()
+                .environmentObject(appState)
+                .environmentObject(accountManager)
+                .environmentObject(authService)
+                .environmentObject(serverDiscovery)
+                .onChange(of: appState.server) {
+                    print("server updated")
+                    if appState.ready {
+                    }
+                }
+                .onChange(of: appState.token) {
+                    print("token updated")
+                    if appState.ready {
+                    }
+                }
+                .onChange(of: appState.userID) {
+                    print("userID updated")
+                    if appState.ready {
+                    }
+                }
+        }
+    }
+}
 
 #endif

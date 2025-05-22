@@ -39,9 +39,19 @@ struct EMPlayerApp: App {
         .commands {
             CommandGroup(replacing: .newItem) { }
         }
-        #else
+        #elseif os(iOS)
         WindowGroup {
             RootView()
+                .environmentObject(appState)
+                .environmentObject(itemRepository)
+                .environmentObject(drill)
+                .environmentObject(accountManager)
+                .environmentObject(serverDiscovery)
+                .environmentObject(authService)
+        }
+        #elseif os(tvOS)
+        WindowGroup {
+            TVRootView()
                 .environmentObject(appState)
                 .environmentObject(itemRepository)
                 .environmentObject(drill)

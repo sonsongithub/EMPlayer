@@ -17,6 +17,12 @@
     "+" : {
 
     },
+    "a" : {
+
+    },
+    "Account" : {
+
+    },
     "Are you sure to delete your history?" : {
 
     },
@@ -39,6 +45,9 @@
 
     },
     "History" : {
+
+    },
+    "Home" : {
 
     },
     "Loading…" : {
@@ -72,6 +81,9 @@
 
     },
     "Root" : {
+
+    },
+    "Search" : {
 
     },
     "Select server" : {

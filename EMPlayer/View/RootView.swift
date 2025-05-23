@@ -116,7 +116,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case .movie(let base), .episode(let base):
-                    MovieiOSView(item: base,
+                    MovieView(item: base,
                                  appState: appState,
                                  itemRepository: itemRepository,) {
                         appState.playingItem = nil
@@ -256,7 +256,7 @@ struct RootView: View {
                         .environmentObject(accountManager)
                         .environmentObject(authService)
                 case .movie(let base), .episode(let base):
-                    MovietvOSView(item: base,
+                    MovieView(item: base,
                                  appState: appState,
                                  itemRepository: itemRepository,) {
                         appState.playingItem = nil

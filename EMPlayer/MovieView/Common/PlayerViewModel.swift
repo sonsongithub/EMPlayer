@@ -5,53 +5,9 @@
 //  Created by sonson on 2025/05/17.
 //
 
-
 import AVKit
 import os
 import SwiftUI
-
-#if os(tvOS)
-class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerDelegate {
-    @Published var isPlaying = false
-    @Published var currentTime: Double = 0
-    @Published var duration: Double = 1
-    @Published var volume: Float = 0.5 {
-        didSet {
-            player?.volume = volume
-        }
-    }
-//    @Published var showControls = true
-    @Published var isSeeking = false
-    @Published var isReady = false
-    @Published var isLoading = false
-    @Published var hasError = false
-    
-    var avPlayerViewController: AVPlayerViewController?
-
-    var player: AVPlayer?
-    var playerItem: AVPlayerItem? {
-        didSet {
-            configurePlayer()
-        }
-    }
-
-    private func configurePlayer() {
-        print(#function)
-        guard let item = playerItem else {
-            hasError = true
-            return
-        }
-        print(item)
-        player = AVPlayer(playerItem: item)
-                
-        isReady = true
-        isLoading = false
-        hasError = false
-    }
-
-}
-
-#else
 
 class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerDelegate {
     @Published var isPlaying = false
@@ -69,21 +25,61 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
     @Published var hasError = false
     
     var doesManageCursor = false
-
-#if !os(macOS)
-    var avPlayerViewController: AVPlayerViewController?
-#endif
-#if os(macOS)
-    var pipController: AVPictureInPictureController?
-    @Published var isPipPossible: Bool = false
-    @Published var isPipActive:   Bool = false
-#endif
+    
     var player: AVPlayer?
     var playerItem: AVPlayerItem? {
         didSet {
             configurePlayer()
         }
     }
+#if os(iOS) || os(tvOS)
+    var avPlayerViewController: AVPlayerViewController?
+#endif
+    // ------- private ----------
+    private var lastInteraction = Date()
+    private func configurePlayer() {
+        guard let item = playerItem else {
+            hasError = true
+            return
+        }
+        player = AVPlayer(playerItem: item)
+        
+        isReady = true
+        isLoading = false
+        hasError = false
+#if os(iOS) || os(macOS)
+        setupTimerFunc(item: item)
+#endif
+    }
+    
+#if os(iOS) || os(macOS)
+    
+    private func setupTimerFunc(item: AVPlayerItem) {
+        
+        // duration
+        Task { [weak self] in
+            guard let self else { return }
+            let sec = try? await item.asset.load(.duration).seconds
+            await MainActor.run { self.duration = sec?.isFinite ?? false ? sec! : 1 }
+        }
+        // time observer
+        if let t = timeObserved {
+            player?.removeTimeObserver(t)
+        }
+        timeObserved = player?.addPeriodicTimeObserver(forInterval: .init(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] t in
+            guard let s = self else { return }
+            if !s.isSeeking {
+                s.currentTime = t.seconds
+            }
+            s.isPlaying = (s.player?.rate != 0)
+        }
+    }
+
+#if os(macOS)
+    var pipController: AVPictureInPictureController?
+    @Published var isPipPossible: Bool = false
+    @Published var isPipActive:   Bool = false
+#endif
     
     private var timeObserved: Any?; private var timer: DispatchSourceTimer?
     deinit {
@@ -132,39 +128,6 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         timer?.resume()
     }
 
-    // ------- private ----------
-    private var lastInteraction = Date()
-    private func configurePlayer() {
-        print(#function)
-        guard let item = playerItem else {
-            hasError = true
-            return
-        }
-        print(item)
-        player = AVPlayer(playerItem: item)
-        
-        // duration
-        Task { [weak self] in
-            guard let self else { return }
-            let sec = try? await item.asset.load(.duration).seconds
-            await MainActor.run { self.duration = sec?.isFinite ?? false ? sec! : 1 }
-        }
-        // time observer
-        if let t = timeObserved {
-            player?.removeTimeObserver(t)
-        }
-        timeObserved = player?.addPeriodicTimeObserver(forInterval: .init(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] t in
-            guard let s = self else { return }
-            if !s.isSeeking {
-                s.currentTime = t.seconds
-            }
-            s.isPlaying = (s.player?.rate != 0)
-        }
-        
-        isReady = true
-        isLoading = false
-        hasError = false
-    }
 
     private func checkTimeout() {
         guard isReady, showControls, player?.rate != 0,
@@ -203,6 +166,5 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         print(#function)
     }
 #endif
-}
-
 #endif
+}

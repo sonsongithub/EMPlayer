@@ -9,6 +9,18 @@ import SwiftUI
 
 #if os(macOS)
 
+//struct SidebarView: View {
+//    @EnvironmentObject var appState: AppState
+//    @EnvironmentObject var accountManager: AccountManager
+//    @EnvironmentObject var authService: AuthService
+//    @EnvironmentObject var itemRepository: ItemRepository
+//    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+//    @EnvironmentObject var drill: DrillDownStore
+//
+//    var body: some View {
+//    }
+//}
+
 struct AuthenticationSubView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
@@ -20,21 +32,48 @@ struct AuthenticationSubView: View {
     @State private var selectedServer: ServerInfo? = nil
     @State private var showLoginSheet = false
     
-    var header: some View {
+    var serversHeader: some View {
         HStack {
             Text("Servers")
-            Button("+", action: {
+            Button {
                 showLoginSheet = true
-            })
-            .padding(EdgeInsets(top: 0,leading: 0,bottom: 0,trailing: 0))
-
+            } label: {
+                Image(systemName: "plus").frame(width: 4, height: 4)
+            }
             Spacer()
+        }
+    }
+    
+    var historyHeader: some View {
+        HStack {
+            Text("History")
+            Button {
+                showLoginSheet = true
+            } label: {
+                Image(systemName: "trash").frame(width: 4, height: 4)
+            }
+            Spacer()
+        }
+    }
+    
+    var rootView: some View {
+        Group {
+            if let root = drill.root {
+                Section(header: Text("Root")) {
+                    ForEach(root.children) { child in
+                        Text(child.display())
+                            .onTapGesture {
+                                Task { await open(child, from: -1) }
+                            }
+                    }
+                }
+            }
         }
     }
     
     var body: some View {
         List {
-            Section(header: header) {
+            Section(header: serversHeader) {
                 ForEach(serverDiscovery.servers, id: \.self) { server in
                     Text(server.name)
                         .onTapGesture {
@@ -42,7 +81,7 @@ struct AuthenticationSubView: View {
                         }
                 }
             }
-            Section(header: Text("History")) {
+            Section(header: historyHeader) {
                 ForEach(accountManager.names, id: \.self) { name in
                     Text(accountManager.displayName(for: name))
                         .onTapGesture {
@@ -57,16 +96,7 @@ struct AuthenticationSubView: View {
                         }
                 }
             }
-            if let root = drill.root {
-                Section(header: Text("Root")) {
-                    ForEach(root.children) { child in
-                        Text(child.display())
-                            .onTapGesture {
-                                Task { await open(child, from: -1) }
-                        }
-                    }
-                }
-            }
+            rootView
         }
         .sheet(isPresented: $showLoginSheet) {
                     LoginToServerView()

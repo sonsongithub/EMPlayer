@@ -192,12 +192,12 @@ struct MacOSRootView: View {
             }
             if let overlay = drill.overlay {
                 if case let .movie(base) = overlay.item {
-                    MovieMacView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
+                    MovieView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
                         .transition(.opacity)
                         .zIndex(1)
                 }
                 if case let .episode(base) = overlay.item {
-                    MovieMacView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
+                    MovieView(item: base, app: appState, repo: itemRepository) { drill.overlay = nil }
                         .transition(.opacity)
                         .zIndex(1)
                 }

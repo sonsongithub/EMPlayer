@@ -5,6 +5,8 @@
 //  Created by sonson on 2025/05/20.
 //
 
+#if os(tvOS)
+
 import AVKit
 import os
 import SwiftUI
@@ -87,3 +89,5 @@ struct RelatedVideosView: View {
         print(item)
     }
 }
+
+#endif

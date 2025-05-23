@@ -5,66 +5,11 @@
 //  Created by sonson on 2025/05/17.
 //
 
+#if os(macOS) || os(iOS)
+
 import AVKit
 import os
 import SwiftUI
-
-#if os(macOS)
-struct MouseMoveTracker: NSViewRepresentable {
-    var onMove: () -> Void
-    func makeNSView(context _: Context) -> NSView {
-        TrackingView(onMove: onMove)
-    }
-
-    func updateNSView(_: NSView, context _: Context) {}
-    private final class TrackingView: NSView {
-        let onMove: () -> Void
-        init(onMove: @escaping () -> Void) {
-            self.onMove = onMove
-            super.init(frame: .zero)
-            self.focusRingType = .none
-            let opts: NSTrackingArea.Options = [.mouseMoved, .activeAlways, .inVisibleRect]
-            addTrackingArea(NSTrackingArea(rect: .zero, options: opts, owner: self, userInfo: nil))
-        }
-
-        @available(*, unavailable) required init?(coder _: NSCoder) {
-            nil
-        }
-        override func mouseMoved(with _: NSEvent) {
-            onMove()
-        }
-        override func viewDidMoveToWindow() {
-            window?.acceptsMouseMovedEvents = true
-        }
-    }
-}
-#endif
-
-#if os(tvOS)
-
-
-struct CustomVideoPlayerView: View {
-    @ObservedObject var playerViewModel: PlayerViewModel
-    var onClose: () -> Void = {}
-    let customInfoControllers: [UIViewController]
-    
-    var body: some View {
-        ZStack {
-            if playerViewModel.isLoading {
-                ProgressView("Loading…").tint(.white)
-            } else if playerViewModel.hasError {
-                Text("Can't load").foregroundColor(.white)
-            } else if let player = playerViewModel.player {
-                PlatformPlayerView(player: player, viewModel: self.playerViewModel, customInfoControllers: customInfoControllers)
-                    .ignoresSafeArea()
-            }
-        }
-    }
-}
-
-
-
-#else
 
 struct CustomVideoPlayerView: View {
     @ObservedObject var playerViewModel: PlayerViewModel
@@ -131,7 +76,6 @@ struct CustomVideoPlayerView: View {
                 MouseMoveTracker { playerViewModel.resetInteraction() }
             }
 #endif
-            #if !os(tvOS)
             if playerViewModel.showControls {
                 VStack {
                     Spacer()
@@ -143,7 +87,6 @@ struct CustomVideoPlayerView: View {
                         .padding(.bottom, 20)
                 }
             }
-            #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)

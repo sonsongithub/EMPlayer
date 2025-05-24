@@ -28,7 +28,7 @@ struct EMPlayerApp: App {
     var body: some Scene {
         #if os(macOS)
         WindowGroup {
-            MacOSRootView()
+            RootView()
                 .environmentObject(appState)
                 .environmentObject(itemRepository)
                 .environmentObject(accountManager)
@@ -51,7 +51,7 @@ struct EMPlayerApp: App {
         }
         #elseif os(tvOS)
         WindowGroup {
-            TVRootView()
+            TVTabView()
                 .environmentObject(appState)
                 .environmentObject(itemRepository)
                 .environmentObject(drill)

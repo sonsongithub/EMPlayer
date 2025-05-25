@@ -34,10 +34,7 @@ private func viewForItemNode(node: ItemNode, appState: AppState, itemRepository:
 
 struct CollectionItemView: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var accountManager: AccountManager
-    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     @EnvironmentObject var itemRepository: ItemRepository
-    @EnvironmentObject var authService: AuthService
     @EnvironmentObject var drill: DrillDownStore
     
     #if os(iOS)
@@ -119,11 +116,7 @@ struct CollectionItemView: View {
 
 struct RowView: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var accountManager: AccountManager
-    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     @EnvironmentObject var itemRepository: ItemRepository
-    @EnvironmentObject var authService: AuthService
-    
     @EnvironmentObject var drill: DrillDownStore
     
     let items: [ItemNode]
@@ -136,10 +129,7 @@ struct RowView: View {
                 CollectionItemView(node: item)
                     .frame(width: width, height: height)
                     .environmentObject(appState)
-                    .environmentObject(accountManager)
-                    .environmentObject(serverDiscovery)
                     .environmentObject(itemRepository)
-                    .environmentObject(authService)
             }
         }
         .padding()
@@ -156,19 +146,14 @@ extension Array {
 
 struct CollectionView: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var accountManager: AccountManager
-    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     @EnvironmentObject var itemRepository: ItemRepository
-    @EnvironmentObject var authService: AuthService
-    
     @EnvironmentObject var drill: DrillDownStore
-    
     @ObservedObject var node: ItemNode
     
     #if os(iOS)
     let minWidth: CGFloat = 60  // カラムの最小幅
     let maxWidth: CGFloat = 150  // カラムの最大幅
-    let horizontalSpacing: CGFloat = 16
+    let horizontalSpacing: CGFloat = 32
     let itemPerRow: CGFloat = 8
     let space: CGFloat = 8
     #elseif os(tvOS)
@@ -190,10 +175,7 @@ struct CollectionView: View {
                         ForEach(rows.indices, id: \.self) { rowIndex in
                             RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
                                 .environmentObject(appState)
-                                .environmentObject(accountManager)
-                                .environmentObject(serverDiscovery)
                                 .environmentObject(itemRepository)
-                                .environmentObject(authService)
                         }
                         Spacer()
                     }
@@ -220,11 +202,19 @@ struct CollectionView: View {
     }
 }
 
-//#Preview {
-//    let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
-//    let controller = CollectionViewController.forPreivew(appState: appState)
-//    CollectionView(controller: controller).environmentObject(appState)
-//}
+#Preview {
+    let appState = AppState()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    let children = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .series))
+    }
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children)
+    
+    CollectionView(node: node)
+        .environmentObject(appState)
+        .environmentObject(itemRepository)
+}
 
 #Preview {
     let appState = AppState()
@@ -235,6 +225,7 @@ struct CollectionView: View {
     CollectionItemView(node: itemNode)
         .frame(width: columnWidth, height: height)
         .environmentObject(appState)
+        .background(Color.gray.opacity(0.6))
 }
 
 #endif

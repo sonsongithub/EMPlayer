@@ -31,7 +31,7 @@ struct RootView: View {
             .navigationDestination(for: ItemNode.self) { node in
                 switch node.item {
                 case .collection(_):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)
@@ -45,7 +45,7 @@ struct RootView: View {
                         .environmentObject(accountManager)
                         .environmentObject(authService)
                 case .boxSet(_):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)

@@ -44,7 +44,7 @@ struct RootView: View {
             .navigationDestination(for: ItemNode.self) { node in
                 switch node.item {
                 case let .collection(base):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)
@@ -52,7 +52,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .series(base):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)
@@ -60,7 +60,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .boxSet(base):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)
@@ -68,7 +68,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .season(base):
-                    ItemNodeView(node: node)
+                    CollectionView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)

@@ -60,12 +60,57 @@ extension BaseItem {
                                           imageTags: nil,
                                           collectionType: nil)
     }
+    static func generateRandomItem(type: ItemType) -> BaseItem {
+        return BaseItem(name: "青春ブタ野郎はバニーガール先輩の夢を見ない",
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: nil,
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: nil,
+                        seriesName: nil,
+                        seasonName: nil,
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: 1,
+                        isFolder: nil,
+                        type: type,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil)
+    }
+                                          
+        
     
     func imageURL(server: String?) -> URL? {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-//            return URL(string: "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTSFIR8C4EqpjhnYLI070qP1J7vUVa7-c0aCKVRdj7bnoWpbiv50y1zwPepr7V-Z_LZNZRoYA")!
-            return URL(string: "https://artworks.thetvdb.com/banners/episodes/76885/219124.jpg")!
-//            return URL(string: "https://artworks.thetvdb.com/banners/v4/episode/9867241/screencap/64b1c790c0dd3.jpg")!
+            
+            let movieImages = [
+                Bundle.main.url(forResource: "movie01", withExtension: "png")!,
+                Bundle.main.url(forResource: "movie02", withExtension: "png")!,
+                Bundle.main.url(forResource: "movie03", withExtension: "png")!,
+            ]
+            let previewImages = [
+                Bundle.main.url(forResource: "preview01", withExtension: "png")!,
+                Bundle.main.url(forResource: "preview02", withExtension: "png")!,
+                Bundle.main.url(forResource: "preview03", withExtension: "png")!,
+            ]
+            
+            switch self.type {
+            case .movie:
+                return movieImages.randomElement()!
+            case .episode, .video, .boxSet, .folder, .collectionFolder:
+                return previewImages.randomElement()!
+            case .series:
+                return movieImages.randomElement()!
+            default:
+                return nil
+            }
         } else if let _ = imageTags?.primary, let server = server {
             return URL(string: "\(server)/Items/\(self.id)/Images/Primary")!
         }

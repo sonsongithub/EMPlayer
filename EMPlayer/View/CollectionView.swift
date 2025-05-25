@@ -4,174 +4,237 @@
 ////
 ////  Created by sonson on 2025/02/16.
 ////
-//
-//import SwiftUI
-//
-//#if os(macOS)
-//#else
-//
-//class CollectionViewController: ObservableObject {
-//    
-//    let currentItem: BaseItem
-//    
-//    static func forPreivew(appState: AppState) -> CollectionViewController {
-//        let con = CollectionViewController(currentItem: BaseItem.dummy, appState: appState)
-//        for _ in (0..<20) {
-//            con.items.append(BaseItem.dummy)
-//        }
-//        return con
-//    }
-//    
-//    let appState: AppState
-//    private let apiClient = APIClient()
-//    
-//    @Published var items: [BaseItem] = []
-//    
-//    init(currentItem: BaseItem, appState: AppState) {
-//        self.currentItem = currentItem
-//        self.appState = appState
-//        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-//            self.items = [BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy, BaseItem.dummy]
-//        }
-//    }
-//    
-//    @MainActor
-//    func fetch() async {
-//        do {
-//            let (server, token, userID) = try appState.get()
-//            let items = try await apiClient.fetchItems(server: server, userID: userID, token: token, of: self.currentItem)
-//            DispatchQueue.main.async {
-//                self.items = items
-//            }
-//        } catch {
-//            print(error)
-//        }
-//    }
-//}
-//
-//struct CollectionItemView: View {
-//    let item: BaseItem
-//    let appState: AppState
-//    let width = CGFloat(100)
-//    let height = CGFloat(300)
-//    var body: some View {
-//        GeometryReader { geometry in
-//            NavigationLink(destination: item.nextView(appState: appState)) {
-//                VStack {
-//                    if let url = item.imageURL(server: appState.server) {
-//                        AsyncImage(url: url) { phase in
-//                            switch phase {
-//                            case .empty:
-//                                ProgressView()
-//                            case .success(let image):
-//                                image
-//                                    .resizable()
-//                                    .scaledToFill()
-//                                    .frame(width: geometry.size.width, height: geometry.size.height)
-//                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-//                            case .failure:
-//                                Image(systemName: "photo")
-//                                    .resizable()
-//                                    .scaledToFit()
-//                                    .frame(width: geometry.size.width, height: geometry.size.height)
-//                                    .foregroundColor(.gray)
-//                            @unknown default:
-//                                EmptyView()
-//                            }
-//                        }
-//                        .frame(width: geometry.size.width, height: geometry.size.height)
-//                    } else {
-//                        Image(systemName: "photo")
-//                            .resizable()
-//                            .scaledToFit()
-//                            .frame(width: geometry.size.width, height: geometry.size.height)
-//                            .foregroundColor(.gray)
-//                    }
-//                    Text(item.name)
-//                        .font(.headline)
-//                        .dynamicTypeSize(.xSmall)
-//                }
-//            }
-//        }
-//    }
-//}
-//
-//struct RowView: View {
-//    let appState: AppState
-//    let items: [BaseItem]
-//    let width: CGFloat
-//    let height: CGFloat
-//    let horizontalSpacing: CGFloat
-//    var body: some View {
-//        HStack(spacing: horizontalSpacing) {
-//            ForEach(items, id: \.id) { item in
-//                CollectionItemView(item: item, appState: appState)
-//                    .frame(width: width, height: height)
-//            }
-//        }
-//        .padding()
-//    }
-//}
-//
-//extension Array {
-//    func chunked(into size: Int) -> [[Element]] {
-//        stride(from: 0, to: count, by: size).map {
-//            Array(self[$0..<Swift.min($0 + size, count)])
-//        }
-//    }
-//}
-//
-//struct CollectionView: View {
-//    let minWidth: CGFloat = 60  // カラムの最小幅
-//    let maxWidth: CGFloat = 150  // カラムの最大幅
-//    let horizontalSpacing: CGFloat = 16
-//    let itemPerRow: CGFloat = 8
-//    let space: CGFloat = 8
-//    
-//    @EnvironmentObject var appState: AppState
-//    
-//    @StateObject private var controller: CollectionViewController
-//    
-//    init(controller: CollectionViewController) {
-//        _controller = StateObject(wrappedValue: controller)
-//    }
-//    
-//    var body: some View {
-//        NavigationStack {
-//            GeometryReader { geometry in
-//                let availableWidth = geometry.size.width
-//                let itemPerRow = max(1, Int(availableWidth / maxWidth))
-//                let columnWidth = max(minWidth, (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow))
-//                let height = floor(columnWidth * 10.0 / 7.0 + 10)
-//                ScrollView {
-//                    VStack(alignment: .leading, spacing: space) {
-//                        let rows = self.controller.items.chunked(into: itemPerRow)
-//                        ForEach(rows.indices, id: \.self) { rowIndex in
-//                            RowView(appState: appState, items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
-//                        }
-//                        Spacer()
-//                    }
-//                }.frame(maxWidth: .infinity, maxHeight: .infinity)
-//            }
-//        }
-//        .onAppear {
-//            Task {
-//                await controller.fetch()
-//            }
-//        }
-//        .navigationTitle(controller.currentItem.name)
-//    }
-//}
-//
+
+import SwiftUI
+
+#if os(macOS)
+#else
+
+@ViewBuilder
+private func viewForItemNode(node: ItemNode, appState: AppState, itemRepository: ItemRepository) -> some View {
+        switch node.item {
+        case .collection(_):
+            CollectionView(node: node)
+        case .series(_):
+            CollectionView(node: node)
+        case .boxSet(_):
+            CollectionView(node: node)
+        case .season(_):
+            ItemNodeView(node: node)
+        case .movie(let base), .episode(let base):
+            MovieView(item: base,
+                         appState: appState,
+                         itemRepository: itemRepository) {
+                appState.playingItem = nil
+            }
+        default:
+            Text("error")
+        }
+}
+
+struct CollectionItemView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var drill: DrillDownStore
+    
+    #if os(iOS)
+    let verticalSpacing: CGFloat = 8
+    #elseif os(tvOS)
+    let verticalSpacing: CGFloat = 32
+    #endif
+    let node: ItemNode
+
+    var body: some View {
+        GeometryReader { geometry in
+            switch node.item {
+            case let .series(item), let .collection(item), let .boxSet(item), let .season(item), let .movie(item), let .episode(item):
+                
+//                if case let .series(item) = node.item || let .collection(item) = node.item {
+                    NavigationLink(value: node) {
+                        VStack(alignment: .center, spacing: verticalSpacing) {
+                            if let url = item.imageURL(server: appState.server) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: geometry.size.width, height: geometry.size.height)
+                                        #if os(tvOS)
+                                            .aspectRatio(geometry.size.width / geometry.size.height, contentMode: .fill)
+                                        #endif
+                                        #if os(iOS)
+                                            .aspectRatio(geometry.size.width / geometry.size.height, contentMode: .fill)
+//                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .cornerRadius(8)
+                                        #endif
+                                    case .failure:
+                                        Image(systemName: "photo")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: geometry.size.width, height: geometry.size.height)
+                                            .foregroundColor(.gray)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                            } else {
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
+                                    .foregroundColor(.gray)
+                            }
+                            #if os(iOS)
+                            Text(item.name)
+                                .font(.headline)
+                                .dynamicTypeSize(.xSmall)
+                                .lineLimit(2)
+                                .background(Color.red.opacity(0.1))
+                            #endif
+                            #if os(tvOS)
+                            Text(item.name)
+                                .font(.caption2)
+                                .dynamicTypeSize(.xSmall)
+                                .lineLimit(2)
+                                .frame(height: 60)
+                            #endif
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                
+            default:
+                Text("Unknown")
+            }
+        }
+    }
+}
+
+struct RowView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
+    @EnvironmentObject var drill: DrillDownStore
+    
+    let items: [ItemNode]
+    let width: CGFloat
+    let height: CGFloat
+    let horizontalSpacing: CGFloat
+    var body: some View {
+        HStack(spacing: horizontalSpacing) {
+            ForEach(items, id: \.id) { item in
+                CollectionItemView(node: item)
+                    .frame(width: width, height: height)
+                    .environmentObject(appState)
+                    .environmentObject(accountManager)
+                    .environmentObject(serverDiscovery)
+                    .environmentObject(itemRepository)
+                    .environmentObject(authService)
+            }
+        }
+        .padding()
+    }
+}
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
+    }
+}
+
+struct CollectionView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var accountManager: AccountManager
+    @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var authService: AuthService
+    
+    @EnvironmentObject var drill: DrillDownStore
+    
+    @ObservedObject var node: ItemNode
+    
+    #if os(iOS)
+    let minWidth: CGFloat = 60  // カラムの最小幅
+    let maxWidth: CGFloat = 150  // カラムの最大幅
+    let horizontalSpacing: CGFloat = 16
+    let itemPerRow: CGFloat = 8
+    let space: CGFloat = 8
+    #elseif os(tvOS)
+    let minWidth: CGFloat = 100  // カラムの最小幅
+    let maxWidth: CGFloat = 320  // カラムの最大幅
+    let horizontalSpacing: CGFloat = 64
+    let itemPerRow: CGFloat = 7
+    let space: CGFloat = 64
+    #endif
+    var body: some View {
+            GeometryReader { geometry in
+                let availableWidth = geometry.size.width
+                let itemPerRow = max(1, Int(availableWidth / maxWidth))
+                let columnWidth = max(minWidth, (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow))
+                let height = floor(columnWidth * 4 / 3.0 + 60)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: space) {
+                        let rows = self.node.children.chunked(into: itemPerRow)
+                        ForEach(rows.indices, id: \.self) { rowIndex in
+                            RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
+                                .environmentObject(appState)
+                                .environmentObject(accountManager)
+                                .environmentObject(serverDiscovery)
+                                .environmentObject(itemRepository)
+                                .environmentObject(authService)
+                        }
+                        Spacer()
+                    }
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .onAppear {
+                Task {
+                    switch node.item {
+                    case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
+                        Task {
+                            let items = try await self.itemRepository.children(of: base)
+                            print("items: \(items.count)")
+                            let children = items.map({ ItemNode(item: $0)})
+                            DispatchQueue.main.async {
+                                node.children = children
+                                print("node.children: \(node.children.count)")
+                            }
+                        }
+                    default:
+                        do {}
+                    }
+                }
+            }
+    }
+}
+
 //#Preview {
 //    let appState = AppState(server: "https://example.com", token: "token", userID: "1", isAuthenticated: true)
 //    let controller = CollectionViewController.forPreivew(appState: appState)
 //    CollectionView(controller: controller).environmentObject(appState)
 //}
-//
-//#Preview {
-//    CollectionItemView(item: BaseItem.dummy, appState: AppState())
-//        .frame(width: 200, height: 320)
-//}
-//
-//#endif
+
+#Preview {
+    let appState = AppState()
+    let baseItem = BaseItem.generateRandomItem(type: .series)
+    let itemNode = ItemNode(item: baseItem)
+    let columnWidth = Double(300)
+    let height = floor(columnWidth * 4.0 / 3.0 + 60)
+    CollectionItemView(node: itemNode)
+        .frame(width: columnWidth, height: height)
+        .environmentObject(appState)
+}
+
+#endif

@@ -18,7 +18,9 @@ struct ItemNodeView: View {
     var body: some View {
         List {
             ForEach(node.children, id: \.id) { child in
-                NavigationLink(value: child) {
+                Button {
+                    drill.stack.append(child)
+                } label: {
                     Text(child.display())
                 }
             }

@@ -21,13 +21,16 @@ struct RootView: View {
     @State private var showAuthSheet = false
     
     var body: some View {
-        NavigationStack() {
+        NavigationStack(path: $drill.stack) {
             List {
                 if let root = drill.root {
                     ForEach(root.children, id: \.id) { child in
-                        NavigationLink(value: child) {
+                        Button {
+                            drill.stack.append(child)
+                        } label: {
                             Text(child.display())
                         }
+
                     }
                 }
             }

@@ -10,6 +10,21 @@ import SwiftUI
 #if os(macOS)
 #else
 
+//struct VisibleWhenFocusedModifier: ViewModifier {
+//    @Environment(\.isFocused) var isFocused
+//
+//    func body(content: Content) -> some View {
+//        content.opacity(isFocused ? 1 : 0)
+//    }
+//}
+//
+//extension View {
+//    func visibleWhenFocused() -> some View {
+//        modifier(VisibleWhenFocusedModifier())
+//    }
+//}
+
+
 @ViewBuilder
 private func viewForItemNode(node: ItemNode, appState: AppState, itemRepository: ItemRepository) -> some View {
         switch node.item {
@@ -33,6 +48,9 @@ private func viewForItemNode(node: ItemNode, appState: AppState, itemRepository:
 }
 
 struct CollectionItemView: View {
+    let id = UUID()
+    
+    
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
@@ -44,69 +62,64 @@ struct CollectionItemView: View {
     #endif
     let node: ItemNode
 
+    @FocusState private var focusedID: UUID?
+    
     var body: some View {
         GeometryReader { geometry in
             switch node.item {
             case let .series(item), let .collection(item), let .boxSet(item), let .season(item), let .movie(item), let .episode(item):
-                
-//                if case let .series(item) = node.item || let .collection(item) = node.item {
-                    NavigationLink(value: node) {
-                        VStack(alignment: .center, spacing: verticalSpacing) {
-                            if let url = item.imageURL(server: appState.server) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: geometry.size.width, height: geometry.size.height)
-                                        #if os(tvOS)
-                                            .aspectRatio(geometry.size.width / geometry.size.height, contentMode: .fill)
-                                        #endif
-                                        #if os(iOS)
-                                            .aspectRatio(geometry.size.width / geometry.size.height, contentMode: .fill)
-//                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            .cornerRadius(8)
-                                        #endif
-                                    case .failure:
-                                        Image(systemName: "photo")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: geometry.size.width, height: geometry.size.height)
-                                            .foregroundColor(.gray)
-                                    @unknown default:
-                                        EmptyView()
-                                    }
+                Button {
+                    drill.stack.append(node)
+                } label: {
+                    VStack(alignment: .center, spacing: 0) {
+                        if let url = item.imageURL(server: appState.server) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView()
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .minimumScaleFactor(.leastNonzeroMagnitude)
+                                case .failure:
+                                    Image(systemName: "photo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .minimumScaleFactor(.leastNonzeroMagnitude)
+                                @unknown default:
+                                    EmptyView()
                                 }
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                            } else {
-                                Image(systemName: "photo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                                    .foregroundColor(.gray)
                             }
-                            #if os(iOS)
-                            Text(item.name)
-                                .font(.headline)
-                                .dynamicTypeSize(.xSmall)
-                                .lineLimit(2)
-                                .background(Color.red.opacity(0.1))
-                            #endif
-                            #if os(tvOS)
-                            Text(item.name)
-                                .font(.caption2)
-                                .dynamicTypeSize(.xSmall)
-                                .lineLimit(2)
-                                .frame(height: 60)
-                            #endif
-                            Spacer()
+                            .minimumScaleFactor(.leastNonzeroMagnitude)
+                        } else {
+                            Image(systemName: "photo")
+                                .resizable()
+                                .scaledToFit()
+                                .minimumScaleFactor(.leastNonzeroMagnitude)
                         }
+#if os(iOS)
+                        Text(item.name)
+                            .font(.headline)
+                            .dynamicTypeSize(.xSmall)
+                            .lineLimit(2)
+#endif
+#if os(tvOS)
+                        Text(item.name)
+                            .font(.caption2)
+                            .dynamicTypeSize(.xSmall)
+                            .lineLimit(2)
+                            .minimumScaleFactor(.leastNonzeroMagnitude)
+                            .offset(y: focusedID == id ? 32 : 0) // ← 拡大時に押し出す
+                            .animation(.easeInOut(duration: 0.2), value: (focusedID == id))
+#endif
                     }
-                    .buttonStyle(.borderless)
-                
+                }
+                .minimumScaleFactor(.leastNonzeroMagnitude)
+                .scaleEffect(focusedID == id ? 1.0 : 1.0)
+//                .shadow(color: .black.opacity(focusedID == id ? 0.3 : 0), radius: focusedID == id ? 10 : 0)
+                .animation(.easeInOut(duration: 0.2), value: (focusedID == id))
+                .focused($focusedID, equals: id)
             default:
                 Text("Unknown")
             }
@@ -130,6 +143,7 @@ struct RowView: View {
                     .frame(width: width, height: height)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
+                    .environmentObject(drill)
             }
         }
         .padding()
@@ -176,10 +190,10 @@ struct CollectionView: View {
                             RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
                                 .environmentObject(appState)
                                 .environmentObject(itemRepository)
+                                .environmentObject(drill)
                         }
-                        Spacer()
                     }
-                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
             .onAppear {
                 Task {
@@ -204,6 +218,7 @@ struct CollectionView: View {
 
 #Preview {
     let appState = AppState()
+    let drill = DrillDownStore()
     let itemRepository = ItemRepository(authProviding: appState)
     
     let children = (0..<20).map { _ in
@@ -214,18 +229,23 @@ struct CollectionView: View {
     CollectionView(node: node)
         .environmentObject(appState)
         .environmentObject(itemRepository)
+        .environmentObject(drill)
 }
 
 #Preview {
     let appState = AppState()
     let baseItem = BaseItem.generateRandomItem(type: .series)
     let itemNode = ItemNode(item: baseItem)
+    let drill = DrillDownStore()
     let columnWidth = Double(300)
     let height = floor(columnWidth * 4.0 / 3.0 + 60)
     CollectionItemView(node: itemNode)
         .frame(width: columnWidth, height: height)
         .environmentObject(appState)
-        .background(Color.gray.opacity(0.6))
+        .environmentObject(drill)
+#if os(tvOS)
+        .buttonStyle(.card)
+#endif
 }
 
 #endif

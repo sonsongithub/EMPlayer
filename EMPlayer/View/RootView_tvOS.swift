@@ -18,11 +18,13 @@ struct RootView: View {
     @EnvironmentObject var drill: DrillDownStore
     
     var body: some View {
-        NavigationStack() {
+        NavigationStack(path: $drill.stack) {
             List {
                 if let root = drill.root {
                     ForEach(root.children, id: \.id) { child in
-                        NavigationLink(value: child) {
+                        Button {
+                            drill.stack.append(child)
+                        } label: {
                             Text(child.display())
                         }
                     }
@@ -37,6 +39,7 @@ struct RootView: View {
                         .environmentObject(appState)
                         .environmentObject(accountManager)
                         .environmentObject(authService)
+                        .buttonStyle(.borderless)
                 case .series(_):
                     ItemNodeView(node: node)
                         .environmentObject(itemRepository)
@@ -51,6 +54,7 @@ struct RootView: View {
                         .environmentObject(appState)
                         .environmentObject(accountManager)
                         .environmentObject(authService)
+                        .buttonStyle(.borderless)
                 case .season(_):
                     ItemNodeView(node: node)
                         .environmentObject(itemRepository)

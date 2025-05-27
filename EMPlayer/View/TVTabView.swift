@@ -52,6 +52,13 @@ struct TVTabView: View {
                     Text("Account")
                 }
         }
+        .onAppear {
+            if appState.isAuthenticated {
+                appState.selectedTab = 0
+            } else {
+                appState.selectedTab = 2
+            }
+        }
         .onChange(of: appState.isAuthenticated) {
             if appState.isAuthenticated {
                 appState.selectedTab = 0

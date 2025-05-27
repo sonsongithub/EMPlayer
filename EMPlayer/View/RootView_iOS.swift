@@ -94,6 +94,19 @@ struct RootView: View {
                 }
             }
         }
+        .onAppear() {
+            if appState.isAuthenticated {
+                drill.reset()
+                Task {
+                    let items = try await itemRepository.root()
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                    DispatchQueue.main.async {
+                        drill.root = ItemNode(item: nil, children: children)
+                    }
+                }
+            }
+        }
         .onChange(of: appState.token) {
             if appState.isAuthenticated {
                 drill.reset()

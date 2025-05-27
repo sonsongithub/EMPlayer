@@ -85,6 +85,7 @@ struct LoginToServerView: View {
                     self.appState.userID = account.userID
                     self.appState.server = account.server
                     self.appState.token = account.token
+                    self.appState.saveToUserDefaults()
 //                    self.isLoading = false
 //                    self.errorMessage = nil
                     dismiss()

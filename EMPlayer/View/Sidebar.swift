@@ -53,6 +53,7 @@ struct Sidebar: View {
                 self.appState.server = account.server
                 self.appState.token = account.token
                 self.selectedServer = nil
+                self.appState.saveToUserDefaults()
                 self.drill.reset()
             }
             .environmentObject(appState)

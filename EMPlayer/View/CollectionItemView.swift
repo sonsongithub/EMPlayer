@@ -18,8 +18,8 @@ struct CollectionItemView: View {
     #elseif os(tvOS)
     let verticalSpacing: CGFloat = 4
     #endif
-    let id = UUID()
     let node: ItemNode
+    let isFocused: Bool
     
     func itemInfo() -> (BaseItem?, URL?) {
         switch node.item {
@@ -94,7 +94,7 @@ struct CollectionItemView: View {
     let drill = DrillDownStore()
     let columnWidth = Double(300)
     let height = floor(columnWidth * 4.0 / 3.0 + 60)
-    CollectionItemView(node: itemNode)
+    CollectionItemView(node: itemNode, isFocused: true)
         .frame(width: columnWidth, height: height)
         .environmentObject(appState)
         .environmentObject(drill)

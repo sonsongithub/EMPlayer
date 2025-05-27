@@ -41,6 +41,7 @@ enum ItemNodeType: Equatable {
 final class ItemNode: ObservableObject, Identifiable, Hashable {
 
     let item: ItemNodeType
+    let uuid = UUID()
     @Published var children: [ItemNode]
     @Published var isLoading = false
     @Published var loadError: Error? = nil

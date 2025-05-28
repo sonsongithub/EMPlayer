@@ -55,8 +55,7 @@ struct CollectionView: View {
                         print("items: \(items.count)")
                         let children = items.map({ ItemNode(item: $0)})
                         DispatchQueue.main.async {
-                            node.children = children
-                            print("node.children: \(node.children.count)")
+                            self.node.children = children
                         }
                     }
                 default:

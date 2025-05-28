@@ -55,7 +55,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .series(base):
-                    CollectionView(node: node)
+                    SeriesView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)

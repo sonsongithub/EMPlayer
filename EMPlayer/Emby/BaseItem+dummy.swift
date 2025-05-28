@@ -12,7 +12,6 @@
 import Foundation
 
 extension BaseItem {
-    
     static var dummy: BaseItem = BaseItem(name: "ガンダム",
                                       originalTitle: nil,
                                       id: UUID().uuidString,
@@ -85,8 +84,6 @@ extension BaseItem {
                         collectionType: nil)
     }
                                           
-        
-    
     func imageURL(server: String?) -> URL? {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             
@@ -116,5 +113,107 @@ extension BaseItem {
         }
         return nil
     }
-
+    
+    // create series data
+    static func createSeriesData() -> BaseItem {
+        return BaseItem(name: "機動戦士ガンダム",
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: nil,
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: UUID().uuidString,
+                        seriesName: "機動戦士ガンダム",
+                        seasonName: "",
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: 1,
+                        isFolder: nil,
+                        type: .series,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil)
+    }
+    
+    // create season data
+    static func createSeasonData(series: BaseItem) -> [BaseItem] {
+        return [BaseItem(name: "機動戦士ガンダム 第1シーズン",
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: nil,
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: series.id,
+                        seriesName: series.name,
+                        seasonName: "第1シーズン",
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: 1,
+                        isFolder: nil,
+                        type: .season,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil),
+                BaseItem(name: "機動戦士ガンダム 第2シーズン",
+                                originalTitle: nil,
+                                id: UUID().uuidString,
+                                sourceType: nil,
+                                hasSubtitle: nil,
+                                path: nil,
+                                overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                                aspectRatio: nil,
+                                isHD: nil,
+                                seriesId: series.id,
+                                seriesName: series.name,
+                                seasonName: "第2シーズン",
+                                width: nil,
+                                height: nil,
+                                mediaSource: nil,
+                                mediaStreams: nil,
+                                indexNumber: 2,
+                                isFolder: nil,
+                                type: .season,
+                                userData: nil,
+                                imageTags: nil,
+                                collectionType: nil)
+                ]
+    }
+    
+    // create episode data
+    static func createEpisodeData(season: BaseItem) -> [BaseItem] {
+        return (1...12).map { index in
+            BaseItem(name: "機動戦士ガンダム 第\(String(describing: index))話",
+                     originalTitle: nil,
+                     id: UUID().uuidString,
+                     sourceType: nil,
+                     hasSubtitle: nil,
+                     path: nil,
+                     overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                     aspectRatio: nil,
+                     isHD: nil,
+                     seriesId: season.seriesId,
+                     seriesName: season.seriesName,
+                     seasonName: season.name,
+                     width: nil,
+                     height: nil,
+                     mediaSource: nil,
+                     mediaStreams: nil,
+                     indexNumber: index,
+                     isFolder: nil,
+                     type: .episode,
+                     userData: nil,
+                     imageTags: nil,
+                     collectionType: nil)
+        }
+    }
 }

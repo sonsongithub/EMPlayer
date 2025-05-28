@@ -101,4 +101,65 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
         default:               return "Unknown"
         }
     }
+    
+    static func dummySeries() -> ItemNode {
+        let series = BaseItem.createSeriesData()
+        
+        let seriesNode = ItemNode(item: series)
+        
+        let seasons = BaseItem.createSeasonData(series: series)
+        
+        let seasonNodes = seasons.map { ItemNode(item: $0) }
+        
+        for i in 0..<seasonNodes.count {
+            let episodes = BaseItem.createEpisodeData(season: seasons[i])
+            let episodeNodes = episodes.map { ItemNode(item: $0) }
+            seasonNodes[i].children = episodeNodes
+        }
+        
+        seriesNode.children = seasonNodes
+        
+        print(seriesNode)
+        
+        for node in seriesNode.children {
+            print("Season: \(node.display())")
+            for episode in node.children {
+                print("  Episode: \(episode.display())")
+            }
+        }
+        
+        return seriesNode
+    }
+    
+    static func dummyCollection() -> ItemNode {
+        let series_array = [
+            dummySeries(),
+            dummySeries(),
+            dummySeries(),
+            dummySeries()
+        ]
+        let item = BaseItem(name: "ダミーコレクション",
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: nil,
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: nil,
+                        seriesName: nil,
+                        seasonName: nil,
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: nil,
+                        isFolder: nil,
+                        type: .boxSet,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil)
+        return ItemNode(item: item, children: series_array)
+    }
 }

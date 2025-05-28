@@ -112,12 +112,14 @@ private struct ListColumn: View {
                     .bold()
                     .listRowBackground(Color.gray.opacity(0.2))
                     .onTapGesture {
+                        print(child.display())
                         child.selected = true
                         Task { await open(child, from: index) }
                     }
             } else {
                 Text(child.display())
                     .onTapGesture {
+                        print(child.display())
                         node.children.forEach { $0.selected = false }
                         child.selected = true
                         Task { await open(child, from: index) }
@@ -136,17 +138,29 @@ private struct ListColumn: View {
         switch child.item {
         case .series(let base), .collection(let base), .boxSet(let base):
             Task {
-                let items = try await repo.children(of: base)
-                print("items: \(items.count)")
-                let children = items.map({ ItemNode(item: $0)})
-                DispatchQueue.main.async {
-                    drill.stack = Array(drill.stack.prefix(level + 1))
-                    drill.push(ItemNode(item: nil, children: children))
+                do {
+                    let items = try await repo.children(of: base)
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)})
+                    DispatchQueue.main.async {
+                        drill.stack = Array(drill.stack.prefix(level + 1))
+                        drill.push(ItemNode(item: nil, children: children))
+                    }
+                } catch {
+                    print("Error: \(error)")
+                    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                        drill.push(ItemNode(item: nil, children: child.children))
+                    }
                 }
             }
         case .season(let base):
+            print("Season: \(base.name)")
             drill.stack = Array(drill.stack.prefix(level + 1))
-            drill.detail = ItemNode(item: base)
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                drill.detail = child
+            } else {
+                drill.detail = ItemNode(item: base)
+            }
         case .movie(let base):
             drill.stack = Array(drill.stack.prefix(level + 1))
             drill.detail = ItemNode(item: base)
@@ -158,6 +172,32 @@ private struct ListColumn: View {
             drill.detail = child
         }
     }
+}
+
+struct PreviewView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var drill: DrillDownStore
+    @EnvironmentObject var itemRepository: ItemRepository
+    
+    var body: some View {
+    }
+}
+
+#Preview {
+    let appState = AppState()
+    let drill = DrillDownStore()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    
+        ColumnDrillView()
+            .environmentObject(appState)
+            .environmentObject(drill)
+            .environmentObject(itemRepository)
+            .onAppear {
+                print(#function)
+                let collectionNode = ItemNode.dummyCollection()
+                drill.stack = [collectionNode]
+            }
 }
     
 #endif

@@ -17,6 +17,8 @@ struct CollectionItemView: View {
     let verticalSpacing: CGFloat = 8
     #elseif os(tvOS)
     let verticalSpacing: CGFloat = 4
+    #elseif os(macOS)
+    let verticalSpacing: CGFloat = 8
     #endif
     let node: ItemNode
     let isFocused: Bool

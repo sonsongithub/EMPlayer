@@ -38,20 +38,7 @@ struct CollectionView: View {
         }
         .onAppear {
             Task {
-                switch node.item {
-                case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
-                    Task {
-                        let items = try await self.itemRepository.children(of: base)
-                        print("items: \(items.count)")
-                        let children = items.map({ ItemNode(item: $0)})
-                        DispatchQueue.main.async {
-                            node.children = children
-                            print("node.children: \(node.children.count)")
-                        }
-                    }
-                default:
-                    do {}
-                }
+                await node.loadChildren(using: itemRepository)
             }
         }
     }

@@ -43,24 +43,12 @@ struct CollectionView: View {
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
                     }
-                }.frame(maxWidth: .infinity)
-            }
+                }
+            }.frame(maxWidth: .infinity)
         }
         .onAppear {
             Task {
-                switch node.item {
-                case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
-                    Task {
-                        let items = try await self.itemRepository.children(of: base)
-                        print("items: \(items.count)")
-                        let children = items.map({ ItemNode(item: $0)})
-                        DispatchQueue.main.async {
-                            self.node.children = children
-                        }
-                    }
-                default:
-                    do {}
-                }
+                await node.loadChildren(using: itemRepository)
             }
         }
     }

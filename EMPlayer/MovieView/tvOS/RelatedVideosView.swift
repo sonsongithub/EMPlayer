@@ -11,47 +11,13 @@ import AVKit
 import os
 import SwiftUI
 
-struct CardContentView: View {
-    let appState: AppState
-    let item: BaseItem
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-                AsyncImage(url: item.imageURL(server: appState.server)) { img in
-                    img
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .clipped()
-                        .padding(2)
-                } placeholder: {
-                    Color.gray.opacity(0.3)
-                }
-            VStack(alignment: .leading) {
-                if let index = item.indexNumber {
-                    Text("\(index). \(item.name)")
-                        .font(.body)
-                        .lineLimit(2)
-                } else {
-                    Text(item.name)
-                        .font(.body)
-                        .lineLimit(2)
-                }
-                Text(item.overview ?? "")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(7)
-                Spacer(minLength: 0)
-            }
-        }
-    }
-}
 
 struct RelatedVideosView: View {
     var appState: AppState
-    let items: [BaseItem]
-    var target: BaseItem?
-    var onPush: (BaseItem) -> Void
+    let items: [ItemNode]
+    var target: ItemNode?
+    var onPush: (ItemNode) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -61,7 +27,7 @@ struct RelatedVideosView: View {
                         Button {
                             onPush(item)
                         } label: {
-                            CardContentView(appState: appState, item: item)
+                            CardContentView(appState: appState, node: item)
                                 .padding([.leading, .top, .bottom], 16)
                                 .padding(.trailing, 20)
                                 .frame(height: 230)
@@ -85,7 +51,9 @@ struct RelatedVideosView: View {
 
 #Preview {
     let appState = AppState()
-    RelatedVideosView(appState: appState, items: [BaseItem.generateRandomItem(), BaseItem.generateRandomItem(),BaseItem.generateRandomItem()]) { item in
+    let items = [BaseItem.generateRandomItem(), BaseItem.generateRandomItem(),BaseItem.generateRandomItem()]
+    let nodes = items.map { ItemNode(item: $0) }
+    RelatedVideosView(appState: appState, items: nodes) { item in
         print(item)
     }
 }

@@ -5,7 +5,6 @@
 //  Created by sonson on 2025/05/27.
 //
 
-
 import SwiftUI
 
 struct CollectionItemView: View {
@@ -56,35 +55,41 @@ struct CollectionItemView: View {
     }
     
     var body: some View {
-        switch itemInfo() {
-        case let (.some(item), .some(imageURL)):
-            Button {
-                drill.stack.append(node)
-            } label: {
-                VStack(alignment: .center, spacing: verticalSpacing) {
-                    asyncImage(imageURL: imageURL)
-                    Text(item.name)
-                        .font(.caption2)
-                        .dynamicTypeSize(.xSmall)
-                        .lineLimit(2)
+        GeometryReader { geometry in
+            let (item, imageURL) = itemInfo()
+            
+            Group {
+                if let item = item {
+                    Button {
+                        drill.stack.append(node)
+                    } label: {
+                        VStack(alignment: .center, spacing: verticalSpacing) {
+                            if let imageURL = imageURL {
+                                asyncImage(imageURL: imageURL)
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
+                            } else {
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
+                            }
+
+                            Text(item.name)
+                                .font(.caption2)
+                                .dynamicTypeSize(.xSmall)
+                                .lineLimit(2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("Unknown item type")
                 }
-            }.buttonStyle(.plain)
-        case let (.some(item), _):
-            Button {
-                drill.stack.append(node)
-            } label: {
-                VStack(alignment: .center, spacing: verticalSpacing) {
-                    Image(systemName: "photo")
-                        .resizable()
-                        .scaledToFit()
-                    Text(item.name)
-                        .font(.caption2)
-                        .dynamicTypeSize(.xSmall)
-                        .lineLimit(2)
+            }
+            .onAppear {
+                Task {
+                    await node.updateIfNeeded(using: itemRepository)
                 }
-            }.buttonStyle(.plain)
-        default:
-            Text("Unknown item type")
+            }
         }
     }
 }
@@ -96,7 +101,7 @@ struct CollectionItemView: View {
     let drill = DrillDownStore()
     let columnWidth = Double(300)
     let height = floor(columnWidth * 4.0 / 3.0 + 60)
-    CollectionItemView(node: itemNode, isFocused: true)
+    CollectionItemView(node: itemNode   , isFocused: true)
         .frame(width: columnWidth, height: height)
         .environmentObject(appState)
         .environmentObject(drill)

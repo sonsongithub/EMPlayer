@@ -14,38 +14,22 @@ struct EpisodeView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     
-    let node: ItemNode
+    @ObservedObject var node: ItemNode
     
     var body: some View {
-        if case let .episode(base) = node.item {
+        if case .episode(_) = node.item {
             Button {
-                print("a")
+                drill.stack.append(node)
             } label: {
-                VStack(alignment: .leading) {
-                    Text(base.name)
-                        .font(.caption)
-                        .padding(.bottom, 5)
-                    AsyncImage(url: base.imageURL(server: appState.server)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .clipped()
-                        case .failure:
-                            Color.gray
-                                .frame(height: 200)
-                        default:
-                            Color.gray
-                                .frame(height: 200)
-                        }
-                    }
-                    Text(base.overview ?? "")
-                        .font(.body)
-                        .padding(.top, 5)
+                CardContentView(appState: appState, node: node)
+                    .padding([.leading, .top, .bottom], 16)
+                    .padding(.trailing, 20)
+            }
+            .onAppear() {
+                Task {
+                    await node.updateIfNeeded(using: itemRepository)
                 }
             }
-            .buttonStyle(.plain)
         }
     }
 }
@@ -60,42 +44,25 @@ struct SeasonView: View {
     var body: some View {
         VStack(alignment: .leading) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
+                HStack(spacing: 32) {
                     ForEach(node.children, id: \.id) { item in
                         if case .episode(_) = item.item {
                             EpisodeView(node: item)
                                 .environmentObject(appState)
                                 .environmentObject(itemRepository)
                                 .environmentObject(drill)
-                                .frame(width: 450, height: 350)
+                                .frame(width: 800, height: 400)
                         }
                     }
                 }.frame(maxWidth: .infinity)
                 .padding(.horizontal)
             }
-        }.onAppear() {
-            switch node.item {
-            case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
-                Task {
-                    let items = try await self.itemRepository.children(of: base)
-                    print("items: \(items.count)")
-                    let children = items.map({ ItemNode(item: $0)})
-                    DispatchQueue.main.async {
-                        node.children = children
-                        
-                        Task {
-                            for i in 0..<children.count {
-                                if case let .episode(base) = children[i].item {
-                                    let detail = try await itemRepository.detail(of: base)
-                                    node.children[i] = ItemNode(item: detail)
-                                }
-                            }
-                            
-                        }
-                    }
-                }
-            default:
-                do {}
+            .scrollClipDisabled()
+//            .buttonStyle(.card)
+        }
+        .onAppear() {
+            Task {
+                await node.loadChildren(using: itemRepository)
             }
         }
     }
@@ -106,36 +73,36 @@ struct SeriesInfoView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     
-    let baseItem: BaseItem
+    @ObservedObject var node: ItemNode
     
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .clipped()
-                case .failure:
-                    Color.gray
-                        .frame(height: 200)
-                default:
-                    Color.gray
-                        .frame(height: 200)
+        if case let .series(baseItem) = node.item {
+            HStack(alignment: .top, spacing: 10) {
+                AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable()
+                            .scaledToFit()
+                            .clipped()
+                            .frame(height:300)
+                    case .failure:
+                        Color.gray
+                    default:
+                        Color.gray
+                    }
+                }
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(baseItem.name)
+                        .font(.caption2)
+                        .padding(.leading)
+                    Text(baseItem.overview ?? "")
+                        .font(.footnote)
+                        .padding(.leading)
                 }
             }
-            VStack(alignment: .leading, spacing: 20) {
-                Text(baseItem.name)
-                    .font(.title)
-                    .padding(.leading)
-                Text(baseItem.overview ?? "")
-                    .font(.body)
-                    .padding(.leading)
-            }
+            .frame(height: 300)
+            .padding(30)
         }
-        .padding(30)
-        .background(Color.gray)
     }
 }
 
@@ -149,12 +116,10 @@ struct SeriesView: View {
     var body: some View {
         GeometryReader { proxy in
             ScrollView {
-                if case let .series(base) = node.item {
-                    SeriesInfoView(baseItem: base)
-                        .environmentObject(appState)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                }
+                SeriesInfoView(node: node)
+                    .environmentObject(appState)
+                    .environmentObject(itemRepository)
+                    .environmentObject(drill)
                 LazyVStack(alignment: .leading, spacing: 20) {
                     ForEach(node.children, id: \.id) { season in
                         if case let .season(base) = season.item {
@@ -171,28 +136,8 @@ struct SeriesView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear() {
-                switch node.item {
-                case let .collection(base), let .series(base), let .boxSet(base), let .season(base):
-                    Task {
-                        let items = try await self.itemRepository.children(of: base)
-                        print("items: \(items.count)")
-                        let children = items.map({ ItemNode(item: $0)})
-                        DispatchQueue.main.async {
-                            node.children = children
-                            
-                            Task {
-                                for i in 0..<children.count {
-                                    if case let .episode(base) = children[i].item {
-                                        let detail = try await itemRepository.detail(of: base)
-                                        node.children[i] = ItemNode(item: detail)
-                                    }
-                                }
-                                
-                            }
-                        }
-                    }
-                default:
-                    do {}
+                Task {
+                    await node.loadChildren(using: itemRepository)
                 }
             }
         }

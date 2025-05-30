@@ -63,10 +63,14 @@ struct MovieView: View {
                 }
                 
                 DispatchQueue.main.async {
-                    let view = RelatedVideosView(appState: self.appState, items: children, target: viewController.item) { item in
+                    let node_children = children.map({ ItemNode(item: $0) })
+                    let target_node = ItemNode(item: viewController.item)
+                    let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { node in
                         viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
                         Task {
-                            await viewController.playNewVideo(newItem: item)
+                            if let item = node.baseItem {
+                                await viewController.playNewVideo(newItem: item)
+                            }
                         }
                     }
                     let vc = UIHostingController(rootView: view)

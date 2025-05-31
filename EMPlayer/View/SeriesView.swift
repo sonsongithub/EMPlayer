@@ -9,6 +9,11 @@ import SwiftUI
 
 #if os(tvOS) || os(iOS)
 
+enum SeasonViewOrientation {
+    case vertical
+    case horizontal
+}
+
 struct TrackableItem: View {
     let id: UUID
     var body: some View {
@@ -34,14 +39,23 @@ struct EpisodeView: View {
     
     @ObservedObject var node: ItemNode
     
+    let orientation: SeasonViewOrientation
+    
     var body: some View {
         if case .episode(_) = node.item {
             Button {
                 drill.stack.append(node)
             } label: {
-                CardContentView(appState: appState, node: node, id: node.uuid)
-                    .padding([.leading, .top, .bottom], 16)
-                    .padding(.trailing, 20)
+                switch orientation {
+                case .vertical:
+                    CardContentView(appState: appState, node: node, id: node.uuid, rotation: .portrait)
+                        .padding([.leading, .top, .bottom], 16)
+                        .padding(.trailing, 20)
+                case .horizontal:
+                    CardContentView(appState: appState, node: node, id: node.uuid, rotation: .landscape)
+                        .padding([.leading, .top, .bottom], 16)
+                        .padding(.trailing, 20)
+                }
             }
             .onAppear() {
                 Task {
@@ -59,25 +73,51 @@ struct SeasonView: View {
     
     @ObservedObject var node: ItemNode
     
+    let orientation: SeasonViewOrientation
+    
     var body: some View {
-        HStack {
-            ForEach(node.children, id: \.id) { item in
-                if case .episode(_) = item.item {
-                    EpisodeView(node: item)
-                        .environmentObject(appState)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .frame(width: 800, height: 400)
+        switch orientation {
+        case .vertical:
+            VStack {
+                ForEach(node.children, id: \.id) { item in
+                    if case .episode(_) = item.item {
+                        EpisodeView(node: item, orientation: .horizontal)
+                            .environmentObject(appState)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .frame(width: 800, height: 400)
+                    }
+                }
+                .scrollClipDisabled()
+#if os(tvOS)
+                .buttonStyle(.card)
+#endif
+            }
+            .onAppear() {
+                Task {
+                    await node.loadChildren(using: itemRepository)
                 }
             }
-            .scrollClipDisabled()
-            #if os(tvOS)
-            .buttonStyle(.card)
-            #endif
-        }
-        .onAppear() {
-            Task {
-                await node.loadChildren(using: itemRepository)
+        case .horizontal:
+            HStack {
+                ForEach(node.children, id: \.id) { item in
+                    if case .episode(_) = item.item {
+                        EpisodeView(node: item, orientation: .vertical)
+                            .environmentObject(appState)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .frame(width: 800, height: 400)
+                    }
+                }
+                .scrollClipDisabled()
+#if os(tvOS)
+                .buttonStyle(.card)
+#endif
+            }
+            .onAppear() {
+                Task {
+                    await node.loadChildren(using: itemRepository)
+                }
             }
         }
     }
@@ -99,7 +139,6 @@ struct SeriesInfoView: View {
                         image.resizable()
                             .scaledToFit()
                             .clipped()
-                            .frame(height:300)
                     case .failure:
                         Color.gray
                     default:
@@ -141,6 +180,87 @@ class SeriesViewModel: ObservableObject {
     }
 }
 
+struct RootSeasonView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var drill: DrillDownStore
+    @EnvironmentObject var viewModel: SeriesViewModel
+    
+    @ObservedObject var node: ItemNode
+    
+    let orientation: SeasonViewOrientation
+    
+    var body: some View {
+        ScrollViewReader { proxy in
+            Group {
+                switch orientation {
+                case .horizontal:
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 20) {
+                            ForEach(node.children, id: \.id) { season in
+                                if case .season(_) = season.item {
+                                    SeasonView(node: season, orientation: .horizontal)
+                                        .environmentObject(appState)
+                                        .environmentObject(itemRepository)
+                                        .environmentObject(drill)
+                                        .id(season.uuid)
+                                }
+                            }
+                        }
+                        .padding(.top)
+                        .padding(.horizontal)
+                    }
+                case .vertical:
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            ForEach(node.children, id: \.id) { season in
+                                if case let .season(base) = season.item {
+                                    SeasonView(node: season, orientation: .vertical)
+                                        .environmentObject(appState)
+                                        .environmentObject(itemRepository)
+                                        .environmentObject(drill)
+                                        .id(season.uuid)
+                                }
+                            }
+                        }
+                        .padding(.top)
+                        .padding(.horizontal)
+                    }
+                }
+            }.onChange(of: viewModel.selectedSeason) {
+                guard let selectedSeason  = viewModel.selectedSeason else { return }
+                if viewModel.shouldScroll() {
+                    withAnimation {
+                        if orientation == .horizontal {
+                            proxy.scrollTo(selectedSeason.uuid, anchor: .leading)
+                        } else {
+                            proxy.scrollTo(selectedSeason.uuid, anchor: .top)
+                        }
+                    }
+                }
+                
+            }
+            .onPreferenceChange(VisibleItemPreferenceKey.self) { values in
+                let center = UIScreen.main.bounds.midX
+                if let closest = values.min(by: { abs($0.value - center) < abs($1.value - center) }) {
+                    for child in node.children {
+                        let season_ids = child.children.map { $0.uuid }
+                        if season_ids.contains(closest.key) {
+                            viewModel.scrollDetected(season: child)
+                            break
+                        }
+                    }
+                }
+            }
+            .onAppear() {
+                Task {
+                    await node.loadChildren(using: itemRepository)
+                }
+            }
+        }
+    }
+}
+
 struct SeriesView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
@@ -149,18 +269,21 @@ struct SeriesView: View {
     @StateObject var viewModel = SeriesViewModel()
     
     @ObservedObject var node: ItemNode
-    @State var selectedSeason: ItemNode?
-    @State private var visibleItemID: UUID? = nil
     @State var dummyID = UUID()
-    @State private var automaticSelection = false
+    
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.verticalSizeClass) var verticalSizeClass
+    @Environment(\.layoutDirection) var layoutDirection
+    
     var body: some View {
         GeometryReader { geometry in
+            let isPortrait = geometry.size.height > geometry.size.width
             VStack(alignment: .leading, spacing: 0) {
                 SeriesInfoView(node: node)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
                     .environmentObject(drill)
-                    .frame(height: 300)
+                    .frame(height: geometry.size.height * 0.3)
                     .padding(20)
                 Picker("Season", selection: Binding<ItemNode?>(
                     get: { viewModel.selectedSeason },
@@ -178,55 +301,21 @@ struct SeriesView: View {
                 }
                 .pickerStyle(.menu)
                 .id(self.dummyID)
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 20) {
-                            ForEach(node.children, id: \.id) { season in
-                                if case .season(_) = season.item {
-                                    SeasonView(node: season)
-                                        .environmentObject(appState)
-                                        .environmentObject(itemRepository)
-                                        .environmentObject(drill)
-                                        .id(season.uuid)
-                                }
-                            }
-                        }
-                        .padding(.top)
-                        .padding(.horizontal)
-                    }
-                    .onChange(of: viewModel.selectedSeason) {
-                        guard let selectedSeason  = viewModel.selectedSeason else { return }
-                        if viewModel.shouldScroll() {
-                            withAnimation {
-                                proxy.scrollTo(selectedSeason.uuid, anchor: .leading)
+                
+                RootSeasonView(node: node, orientation: isPortrait ? .vertical : .horizontal)
+                    .environmentObject(appState)
+                    .environmentObject(itemRepository)
+                    .environmentObject(drill)
+                    .environmentObject(viewModel)
+                    .onAppear() {
+                        Task {
+                            await node.loadChildren(using: itemRepository)
+                            DispatchQueue.main.async {
+                                viewModel.scrollDetected(season: node.children.first!)
+                                dummyID = UUID()
                             }
                         }
                     }
-                    .onPreferenceChange(VisibleItemPreferenceKey.self) { values in
-                        let center = UIScreen.main.bounds.midX
-                        if let closest = values.min(by: { abs($0.value - center) < abs($1.value - center) }) {
-                            visibleItemID = closest.key
-                            
-                            for child in node.children {
-                                let season_ids = child.children.map { $0.uuid }
-                                if season_ids.contains(closest.key) {
-                                    viewModel.scrollDetected(season: child)
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .onAppear() {
-                    Task {
-                        await node.loadChildren(using: itemRepository)
-                        DispatchQueue.main.async {
-                            selectedSeason = node.children.first
-                            dummyID = UUID()
-                        }
-                    }
-                }
             }
         }
     }

@@ -12,12 +12,36 @@
 import Foundation
 
 extension BaseItem {
+    static func createDummyURLforPath(type: ItemType) -> String? {
+        
+        let movieImages = [
+            Bundle.main.url(forResource: "movie01", withExtension: "png")!,
+            Bundle.main.url(forResource: "movie02", withExtension: "png")!,
+            Bundle.main.url(forResource: "movie03", withExtension: "png")!,
+        ]
+        let previewImages = [
+            Bundle.main.url(forResource: "preview01", withExtension: "png")!,
+            Bundle.main.url(forResource: "preview02", withExtension: "png")!,
+            Bundle.main.url(forResource: "preview03", withExtension: "png")!,
+        ]
+        
+        switch type {
+        case .movie:
+            return movieImages.randomElement()!.absoluteString
+        case .episode, .video, .boxSet, .folder, .collectionFolder:
+            return previewImages.randomElement()!.absoluteString
+        case .series:
+            return movieImages.randomElement()!.absoluteString
+        default:
+            return nil
+        }
+    }
     static var dummy: BaseItem = BaseItem(name: "ガンダム",
                                       originalTitle: nil,
                                       id: UUID().uuidString,
                                       sourceType: nil,
                                       hasSubtitle: nil,
-                                      path: nil,
+                                      path: createDummyURLforPath(type: .movie),
                                       overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                                       aspectRatio: nil,
                                       isHD: nil,
@@ -37,35 +61,36 @@ extension BaseItem {
     
     static func generateRandomItem() -> BaseItem {
         return BaseItem(name: "ガンダム",
-                                          originalTitle: nil,
-                                          id: UUID().uuidString,
-                                          sourceType: nil,
-                                          hasSubtitle: nil,
-                                          path: nil,
-                                          overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
-                                          aspectRatio: nil,
-                                          isHD: nil,
-                                          seriesId: nil,
-                                          seriesName: nil,
-                                          seasonName: nil,
-                                          width: nil,
-                                          height: nil,
-                                          mediaSource: nil,
-                                          mediaStreams: nil,
-                                          indexNumber: 1,
-                                          isFolder: nil,
-                                          type: nil,
-                                          userData: nil,
-                                          imageTags: nil,
-                                          collectionType: nil)
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: createDummyURLforPath(type: .movie),
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: nil,
+                        seriesName: nil,
+                        seasonName: nil,
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: 1,
+                        isFolder: nil,
+                        type: nil,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil)
     }
     static func generateRandomItem(type: ItemType) -> BaseItem {
+        let dummyPath = createDummyURLforPath(type: type)
         return BaseItem(name: "青春ブタ野郎はバニーガール先輩の夢を見ない",
                         originalTitle: nil,
                         id: UUID().uuidString,
                         sourceType: nil,
                         hasSubtitle: nil,
-                        path: nil,
+                        path: dummyPath,
                         overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                         aspectRatio: nil,
                         isHD: nil,
@@ -86,27 +111,8 @@ extension BaseItem {
                                           
     func imageURL(server: String?) -> URL? {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            
-            let movieImages = [
-                Bundle.main.url(forResource: "movie01", withExtension: "png")!,
-                Bundle.main.url(forResource: "movie02", withExtension: "png")!,
-                Bundle.main.url(forResource: "movie03", withExtension: "png")!,
-            ]
-            let previewImages = [
-                Bundle.main.url(forResource: "preview01", withExtension: "png")!,
-                Bundle.main.url(forResource: "preview02", withExtension: "png")!,
-                Bundle.main.url(forResource: "preview03", withExtension: "png")!,
-            ]
-            
-            switch self.type {
-            case .movie:
-                return movieImages.randomElement()!
-            case .episode, .video, .boxSet, .folder, .collectionFolder:
-                return previewImages.randomElement()!
-            case .series:
-                return movieImages.randomElement()!
-            default:
-                return nil
+            if let path = self.path, let url = URL(string: path) {
+                return url
             }
         } else if let _ = imageTags?.primary, let server = server {
             return URL(string: "\(server)/Items/\(self.id)/Images/Primary")!
@@ -121,7 +127,7 @@ extension BaseItem {
                         id: UUID().uuidString,
                         sourceType: nil,
                         hasSubtitle: nil,
-                        path: nil,
+                        path: createDummyURLforPath(type: .series),
                         overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                         aspectRatio: nil,
                         isHD: nil,
@@ -147,7 +153,7 @@ extension BaseItem {
                         id: UUID().uuidString,
                         sourceType: nil,
                         hasSubtitle: nil,
-                        path: nil,
+                        path: createDummyURLforPath(type: .season),
                         overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                         aspectRatio: nil,
                         isHD: nil,
@@ -169,7 +175,7 @@ extension BaseItem {
                                 id: UUID().uuidString,
                                 sourceType: nil,
                                 hasSubtitle: nil,
-                                path: nil,
+                                path: createDummyURLforPath(type: .season),
                                 overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                                 aspectRatio: nil,
                                 isHD: nil,
@@ -197,7 +203,7 @@ extension BaseItem {
                      id: UUID().uuidString,
                      sourceType: nil,
                      hasSubtitle: nil,
-                     path: nil,
+                     path: createDummyURLforPath(type: .episode),
                      overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
                      aspectRatio: nil,
                      isHD: nil,

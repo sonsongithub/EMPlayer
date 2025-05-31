@@ -9,6 +9,24 @@ import SwiftUI
 
 #if os(tvOS) || os(iOS)
 
+struct TrackableItem: View {
+    let id: UUID
+    var body: some View {
+        GeometryReader { geometry in
+            Color.clear
+                .preference(key: VisibleItemPreferenceKey.self, value: [id: geometry.frame(in: .global).midX])
+        }
+    }
+}
+
+struct VisibleItemPreferenceKey: PreferenceKey {
+    static var defaultValue: [UUID: CGFloat] = [:]
+
+    static func reduce(value: inout [UUID: CGFloat], nextValue: () -> [UUID: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
 struct EpisodeView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
@@ -21,7 +39,7 @@ struct EpisodeView: View {
             Button {
                 drill.stack.append(node)
             } label: {
-                CardContentView(appState: appState, node: node)
+                CardContentView(appState: appState, node: node, id: node.uuid)
                     .padding([.leading, .top, .bottom], 16)
                     .padding(.trailing, 20)
             }
@@ -42,23 +60,20 @@ struct SeasonView: View {
     @ObservedObject var node: ItemNode
     
     var body: some View {
-        VStack(alignment: .leading) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 32) {
-                    ForEach(node.children, id: \.id) { item in
-                        if case .episode(_) = item.item {
-                            EpisodeView(node: item)
-                                .environmentObject(appState)
-                                .environmentObject(itemRepository)
-                                .environmentObject(drill)
-                                .frame(width: 800, height: 400)
-                        }
-                    }
-                }.frame(maxWidth: .infinity)
-                .padding(.horizontal)
+        HStack {
+            ForEach(node.children, id: \.id) { item in
+                if case .episode(_) = item.item {
+                    EpisodeView(node: item)
+                        .environmentObject(appState)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .frame(width: 800, height: 400)
+                }
             }
             .scrollClipDisabled()
-//            .buttonStyle(.card)
+            #if os(tvOS)
+            .buttonStyle(.card)
+            #endif
         }
         .onAppear() {
             Task {
@@ -100,9 +115,29 @@ struct SeriesInfoView: View {
                         .padding(.leading)
                 }
             }
-            .frame(height: 300)
-            .padding(30)
         }
+    }
+}
+
+class SeriesViewModel: ObservableObject {
+    @Published var selectedSeason: ItemNode?
+    private var scrollOriginated = false
+
+    func userSelected(season: ItemNode) {
+        scrollOriginated = false
+        selectedSeason = season
+    }
+
+    func scrollDetected(season: ItemNode) {
+        guard selectedSeason?.uuid != season.uuid else { return }
+        scrollOriginated = true
+        selectedSeason = season
+    }
+
+    func shouldScroll() -> Bool {
+        let should = !scrollOriginated
+        scrollOriginated = false
+        return should
     }
 }
 
@@ -111,33 +146,86 @@ struct SeriesView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     
-    @ObservedObject var node: ItemNode
+    @StateObject var viewModel = SeriesViewModel()
     
+    @ObservedObject var node: ItemNode
+    @State var selectedSeason: ItemNode?
+    @State private var visibleItemID: UUID? = nil
+    @State var dummyID = UUID()
+    @State private var automaticSelection = false
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
+        GeometryReader { geometry in
+            VStack(alignment: .leading, spacing: 0) {
                 SeriesInfoView(node: node)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
                     .environmentObject(drill)
-                LazyVStack(alignment: .leading, spacing: 20) {
-                    ForEach(node.children, id: \.id) { season in
-                        if case let .season(base) = season.item {
-                            Text(base.name)
-                            SeasonView(node: season)
-                                .environmentObject(appState)
-                                .environmentObject(itemRepository)
-                                .environmentObject(drill)
+                    .frame(height: 300)
+                    .padding(20)
+                Picker("Season", selection: Binding<ItemNode?>(
+                    get: { viewModel.selectedSeason },
+                    set: { newValue in
+                        if let season = newValue {
+                            viewModel.userSelected(season: season)
+                        }
+                    })
+                ) {
+                    ForEach(node.children, id: \.customID) { season in
+                        Text(season.display())
+                            .font(.caption2)
+                            .tag(Optional(season))
+                    }
+                }
+                .pickerStyle(.menu)
+                .id(self.dummyID)
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 20) {
+                            ForEach(node.children, id: \.id) { season in
+                                if case .season(_) = season.item {
+                                    SeasonView(node: season)
+                                        .environmentObject(appState)
+                                        .environmentObject(itemRepository)
+                                        .environmentObject(drill)
+                                        .id(season.uuid)
+                                }
+                            }
+                        }
+                        .padding(.top)
+                        .padding(.horizontal)
+                    }
+                    .onChange(of: viewModel.selectedSeason) {
+                        guard let selectedSeason  = viewModel.selectedSeason else { return }
+                        if viewModel.shouldScroll() {
+                            withAnimation {
+                                proxy.scrollTo(selectedSeason.uuid, anchor: .leading)
+                            }
+                        }
+                    }
+                    .onPreferenceChange(VisibleItemPreferenceKey.self) { values in
+                        let center = UIScreen.main.bounds.midX
+                        if let closest = values.min(by: { abs($0.value - center) < abs($1.value - center) }) {
+                            visibleItemID = closest.key
+                            
+                            for child in node.children {
+                                let season_ids = child.children.map { $0.uuid }
+                                if season_ids.contains(closest.key) {
+                                    viewModel.scrollDetected(season: child)
+                                    break
+                                }
+                            }
                         }
                     }
                 }
-                .padding(.top)
-                .padding(.horizontal)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear() {
-                Task {
-                    await node.loadChildren(using: itemRepository)
+                .frame(maxWidth: .infinity)
+                .onAppear() {
+                    Task {
+                        await node.loadChildren(using: itemRepository)
+                        DispatchQueue.main.async {
+                            selectedSeason = node.children.first
+                            dummyID = UUID()
+                        }
+                    }
                 }
             }
         }

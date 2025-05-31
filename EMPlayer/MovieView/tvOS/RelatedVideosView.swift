@@ -11,8 +11,6 @@ import AVKit
 import os
 import SwiftUI
 
-
-
 struct RelatedVideosView: View {
     var appState: AppState
     let items: [ItemNode]
@@ -27,7 +25,7 @@ struct RelatedVideosView: View {
                         Button {
                             onPush(item)
                         } label: {
-                            CardContentView(appState: appState, node: item)
+                            CardContentView(appState: appState, node: item, id: item.uuid)
                                 .padding([.leading, .top, .bottom], 16)
                                 .padding(.trailing, 20)
                                 .frame(height: 230)

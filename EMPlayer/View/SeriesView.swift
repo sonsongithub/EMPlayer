@@ -39,28 +39,32 @@ struct EpisodeView: View {
     
     @ObservedObject var node: ItemNode
     
-    let orientation: SeasonViewOrientation
+    let orientation: CardContentView.Orientation
+    let parentOrientation: SeasonViewOrientation
     
     var body: some View {
-        if case .episode(_) = node.item {
-            Button {
-                drill.stack.append(node)
-            } label: {
-                switch orientation {
-                case .vertical:
-                    CardContentView(appState: appState, node: node, id: node.uuid, rotation: .portrait)
-                        .padding([.leading, .top, .bottom], 16)
-                        .padding(.trailing, 20)
-                case .horizontal:
-                    CardContentView(appState: appState, node: node, id: node.uuid, rotation: .landscape)
-                        .padding([.leading, .top, .bottom], 16)
-                        .padding(.trailing, 20)
+        GeometryReader { geometry in
+            if case .episode(_) = node.item {
+                Button {
+                    drill.stack.append(node)
+                } label: {
+                    switch orientation {
+                    case .landscape:
+                        CardContentView(appState: appState, node: node, id: node.uuid, rotation: .portrait)
+                            .padding([.leading, .top, .bottom], 16)
+                            .padding(.trailing, 20)
+                    case .portrait:
+                        CardContentView(appState: appState, node: node, id: node.uuid, rotation: .landscape)
+                            .padding([.leading, .top, .bottom], 16)
+                            .padding(.trailing, 20)
+                    }
                 }
-            }
-            .onAppear() {
-                Task {
-                    await node.updateIfNeeded(using: itemRepository)
+                .onAppear() {
+                    Task {
+                        await node.updateIfNeeded(using: itemRepository)
+                    }
                 }
+                .preference(key: VisibleItemPreferenceKey.self, value: (parentOrientation == .horizontal) ? [node.uuid: geometry.frame(in: .global).midX] : [node.uuid: geometry.frame(in: .global).midY])
             }
         }
     }
@@ -81,11 +85,10 @@ struct SeasonView: View {
             VStack {
                 ForEach(node.children, id: \.id) { item in
                     if case .episode(_) = item.item {
-                        EpisodeView(node: item, orientation: .horizontal)
-                            .environmentObject(appState)
+                        EpisodeView(node: item, orientation: .portrait, parentOrientation: .vertical)                        .environmentObject(appState)
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
-                            .frame(width: 800, height: 400)
+                            .frame(height: 200)
                     }
                 }
                 .scrollClipDisabled()
@@ -102,11 +105,11 @@ struct SeasonView: View {
             HStack {
                 ForEach(node.children, id: \.id) { item in
                     if case .episode(_) = item.item {
-                        EpisodeView(node: item, orientation: .vertical)
+                        EpisodeView(node: item, orientation: .landscape, parentOrientation: .horizontal)
                             .environmentObject(appState)
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
-                            .frame(width: 800, height: 400)
+                            .frame(width: 400)
                     }
                 }
                 .scrollClipDisabled()
@@ -146,9 +149,9 @@ struct SeriesInfoView: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(baseItem.name)
-                        .font(.caption2)
-                        .padding(.leading)
+//                    Text(baseItem.name)
+//                        .font(.caption2)
+//                        .padding(.leading)
                     Text(baseItem.overview ?? "")
                         .font(.footnote)
                         .padding(.leading)
@@ -190,6 +193,9 @@ struct RootSeasonView: View {
     
     let orientation: SeasonViewOrientation
     
+    let width: CGFloat
+    let height: CGFloat
+    
     var body: some View {
         ScrollViewReader { proxy in
             Group {
@@ -204,17 +210,16 @@ struct RootSeasonView: View {
                                         .environmentObject(itemRepository)
                                         .environmentObject(drill)
                                         .id(season.uuid)
+                                        .frame(height: height)
                                 }
                             }
                         }
-                        .padding(.top)
-                        .padding(.horizontal)
                     }
                 case .vertical:
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 20) {
                             ForEach(node.children, id: \.id) { season in
-                                if case let .season(base) = season.item {
+                                if case .season(_) = season.item {
                                     SeasonView(node: season, orientation: .vertical)
                                         .environmentObject(appState)
                                         .environmentObject(itemRepository)
@@ -223,8 +228,6 @@ struct RootSeasonView: View {
                                 }
                             }
                         }
-                        .padding(.top)
-                        .padding(.horizontal)
                     }
                 }
             }.onChange(of: viewModel.selectedSeason) {
@@ -241,7 +244,7 @@ struct RootSeasonView: View {
                 
             }
             .onPreferenceChange(VisibleItemPreferenceKey.self) { values in
-                let center = UIScreen.main.bounds.midX
+                let center = (orientation == .horizontal) ? UIScreen.main.bounds.midX : UIScreen.main.bounds.midY
                 if let closest = values.min(by: { abs($0.value - center) < abs($1.value - center) }) {
                     for child in node.children {
                         let season_ids = child.children.map { $0.uuid }
@@ -284,7 +287,7 @@ struct SeriesView: View {
                     .environmentObject(itemRepository)
                     .environmentObject(drill)
                     .frame(height: geometry.size.height * 0.3)
-                    .padding(20)
+                    .background(Color.red)
                 Picker("Season", selection: Binding<ItemNode?>(
                     get: { viewModel.selectedSeason },
                     set: { newValue in
@@ -299,10 +302,11 @@ struct SeriesView: View {
                             .tag(Optional(season))
                     }
                 }
+                .padding(0)
                 .pickerStyle(.menu)
                 .id(self.dummyID)
                 
-                RootSeasonView(node: node, orientation: isPortrait ? .vertical : .horizontal)
+                RootSeasonView(node: node, orientation: isPortrait ? .vertical : .horizontal, width: geometry.size.width, height: geometry.size.height * 0.4)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
                     .environmentObject(drill)

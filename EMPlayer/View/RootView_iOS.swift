@@ -47,13 +47,17 @@ struct RootView: View {
             .navigationDestination(for: ItemNode.self) { node in
                 switch node.item {
                 case let .collection(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case let .series(base):
                     SeriesView(node: node)
                         .environmentObject(itemRepository)
@@ -63,21 +67,29 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .boxSet(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case let .season(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case .movie(let base), .episode(let base):
                     MovieView(item: base,
                                  appState: appState,

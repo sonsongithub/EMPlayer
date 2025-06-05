@@ -9,82 +9,6 @@ import SwiftUI
 
 #if os(tvOS) || os(iOS)
 
-
-struct SeriesViewStrategy {
-    
-    enum ScrollDirection {
-        case vertical
-        case horizontal
-    }
-    enum EpisodeLayout {
-        case portrait
-        case landscape
-    }
-
-    let scrollDirection: ScrollDirection
-    let episodeLayout: EpisodeLayout
-    
-    let infoViewHeight: CGFloat
-    let episodeWidth: CGFloat
-    let episodeHeight: CGFloat
-
-    init(isPad: Bool, isPortrait: Bool, size: CGSize) {
-        #if os(iOS)
-        if isPad {
-            scrollDirection = isPortrait ? .vertical : .horizontal
-            episodeLayout = isPortrait ? .landscape : .portrait
-            if isPortrait {
-                infoViewHeight = size.height * 0.3
-                episodeWidth = size.width
-                episodeHeight = 200
-            } else {
-                infoViewHeight = size.height * 0.3
-                episodeWidth = 400
-                episodeHeight = size.height * 0.6
-            }
-        } else {
-            scrollDirection = isPortrait ? .vertical : .horizontal
-            episodeLayout = isPortrait ? .landscape : .landscape
-            if isPortrait {
-                infoViewHeight = size.height * 0.3
-                episodeWidth = size.width
-                episodeHeight = 150
-            } else {
-                infoViewHeight = size.height * 0.3
-                episodeWidth = 400
-                episodeHeight = size.height * 0.6
-            }
-        }
-        #else
-        scrollDirection = .horizontal
-        episodeLayout = .portrait
-        infoViewHeight = size.height * 0.3
-        episodeWidth = 400
-        episodeHeight = size.height * 0.6
-        #endif
-    }
-
-    static let `default` = SeriesViewStrategy(isPad: false, isPortrait: true, size: CGSize(width: 1920, height: 800))
-    
-    static func resolve(using geometry: GeometryProxy) -> SeriesViewStrategy {
-        let size = geometry.size
-        let isPortrait = size.height >= size.width
-        let isPad = UIDevice.current.userInterfaceIdiom == .pad
-        return SeriesViewStrategy(isPad: isPad, isPortrait: isPortrait, size: size)
-    }
-}
-
-private struct SeriesViewStrategyKey: EnvironmentKey {
-    static let defaultValue: SeriesViewStrategy = .default
-}
-
-extension EnvironmentValues {
-    var seriesViewStrategy: SeriesViewStrategy {
-        get { self[SeriesViewStrategyKey.self] }
-        set { self[SeriesViewStrategyKey.self] = newValue }
-    }
-}
-
 struct VisibleItemPreferenceKey: PreferenceKey {
     static var defaultValue: [UUID: CGFloat] = [:]
 
@@ -110,12 +34,10 @@ struct EpisodeView: View {
                     switch strategy.episodeLayout {
                     case .landscape:
                         CardContentView(appState: appState, node: node, id: node.uuid, rotation: .landscape)
-                            .padding([.leading, .top, .bottom], 16)
-                            .padding(.trailing, 20)
+                            .padding(strategy.cardContentViewPadding)
                     case .portrait:
                         CardContentView(appState: appState, node: node, id: node.uuid, rotation: .portrait)
-                            .padding([.leading, .top, .bottom], 16)
-                            .padding(.trailing, 20)
+                            .padding(strategy.cardContentViewPadding)
                     }
                 }
                 .onAppear() {
@@ -139,7 +61,7 @@ struct SeasonView: View {
     var body: some View {
         switch strategy.scrollDirection {
         case .vertical:
-            VStack {
+            VStack(spacing: strategy.episodeVerticalSpace) {
                 ForEach(node.children, id: \.id) { item in
                     if case .episode(_) = item.item {
                         EpisodeView(node: item)
@@ -161,7 +83,7 @@ struct SeasonView: View {
                 }
             }
         case .horizontal:
-            HStack {
+            HStack(spacing: strategy.episodeHorizontalSpace) {
                 ForEach(node.children, id: \.id) { item in
                     if case .episode(_) = item.item {
                         EpisodeView(node: item)
@@ -195,26 +117,31 @@ struct SeriesInfoView: View {
     
     var body: some View {
         if case let .series(baseItem) = node.item {
-            HStack(alignment: .top, spacing: 0) {
-                AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable()
-                            .scaledToFit()
-                            .clipped()
-                    case .failure:
-                        Color.gray
-                    default:
-                        Color.gray
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 0) {
+                    AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable()
+                                .scaledToFit()
+                                .clipped()
+                        case .failure:
+                            Color.gray
+                        default:
+                            Color.gray
+                        }
                     }
-                }
-                VStack(alignment: .leading, spacing: 0) {
-//                    Text(baseItem.name)
-//                        .font(.caption2)
-//                        .padding(.leading)
-                    Text(baseItem.overview ?? "")
-                        .font(.footnote)
-                        .padding()
+                    VStack(alignment: .leading, spacing: 0) {
+                        if strategy.infoViewHasTitle {
+                            Text(baseItem.name)
+                                .font(strategy.infoViewTitleFont)
+                                .bold()
+                                .padding()
+                        }
+                        Text(baseItem.overview ?? "")
+                            .font(strategy.infoViewOverviewFont)
+                            .padding()
+                    }
                 }
             }
         }
@@ -324,6 +251,7 @@ struct SeriesView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
+    @State var tabBarVisibility: Visibility = .visible
     
     @StateObject var viewModel = SeriesViewModel()
     
@@ -339,9 +267,8 @@ struct SeriesView: View {
                     .environmentObject(itemRepository)
                     .environmentObject(drill)
                     .frame(height: strategy.infoViewHeight)
-                    .background(Color.red)
-                    .padding(.leading, 10)
-                    .padding(.trailing, 10)
+                    .environment(\.seriesViewStrategy, strategy)
+                    .padding(.horizontal, strategy.infoViewHorizontalPadding)
                 Picker("Season", selection: Binding<ItemNode?>(
                     get: { viewModel.selectedSeason },
                     set: { newValue in
@@ -358,6 +285,8 @@ struct SeriesView: View {
                 }
                 .pickerStyle(.menu)
                 .id(self.dummyID)
+                .padding(.top, strategy.pickerMarginTop)
+                .padding(.bottom, strategy.pickerMarginBottom)
                 
                 RootSeasonView(node: node)
                     .environmentObject(appState)
@@ -375,6 +304,14 @@ struct SeriesView: View {
                         }
                     }
             }
+            .ignoresSafeArea(edges: [])
+            .toolbar(tabBarVisibility, for: .tabBar)
+            .onAppear() {
+                tabBarVisibility = .hidden
+            }
+            .onDisappear() {
+                tabBarVisibility = .visible
+            }
         }
     }
 }
@@ -384,10 +321,15 @@ struct SeriesView: View {
     let drill = DrillDownStore()
     let itemRepository = ItemRepository(authProviding: appState)
     let seriesNode = ItemNode.dummySeries()
-    SeriesView(node: seriesNode)
-        .environmentObject(appState)
-        .environmentObject(itemRepository)
-        .environmentObject(drill)
+    NavigationStack {
+        SeriesView(node: seriesNode)
+            .environmentObject(appState)
+            .environmentObject(itemRepository)
+            .environmentObject(drill)
+        #if os(iOS)
+            .navigationTitle("Test")
+        #endif
+    }
 }
 
 #endif

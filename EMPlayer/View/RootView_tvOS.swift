@@ -41,7 +41,7 @@ struct RootView: View {
                         .environmentObject(authService)
                         .buttonStyle(.borderless)
                 case .series(_):
-                    ItemNodeView(node: node)
+                    SeriesView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)

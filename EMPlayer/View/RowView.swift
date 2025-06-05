@@ -11,8 +11,9 @@ import SwiftUI
 struct RowView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
-    @EnvironmentObject var drill: DrillDownStore
     
+    @EnvironmentObject var drill: DrillDownStore
+    @FocusState private var focusedID: UUID?
     let items: [ItemNode]
     let width: CGFloat
     let height: CGFloat
@@ -20,13 +21,14 @@ struct RowView: View {
     var body: some View {
         HStack(spacing: horizontalSpacing) {
             ForEach(items, id: \.id) { item in
-                CollectionItemView(node: item)
+                CollectionItemView(node: item, isFocused: (focusedID == item.uuid))
                     .frame(width: width, height: height)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
-                    .environmentObject(drill)
+                    .focused($focusedID, equals: item.uuid)
+                    .zIndex(focusedID == item.uuid ? 1 : 0)
             }
-        }.frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, horizontalSpacing) // ← 左右を均等にする
+        }
+        .padding()
     }
 }

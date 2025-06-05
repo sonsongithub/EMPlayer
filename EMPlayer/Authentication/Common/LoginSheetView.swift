@@ -82,6 +82,7 @@ struct LoginSheetView: View {
                     self.appState.userID = account.userID
                     self.appState.server = account.server
                     self.appState.token = account.token
+                    self.appState.saveToUserDefaults()
                     self.selectedServer = nil
                     self.drill.reset()
                 }

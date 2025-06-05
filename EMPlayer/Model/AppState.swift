@@ -39,9 +39,9 @@ class AppState: ObservableObject, AuthProviding {
     @Published var selectedTab: Int = 0
 
     init() {
-        UserDefaults.standard.removeObject(forKey: "server")
-        UserDefaults.standard.removeObject(forKey: "token")
-        UserDefaults.standard.removeObject(forKey: "userID")
+//        UserDefaults.standard.removeObject(forKey: "server")
+//        UserDefaults.standard.removeObject(forKey: "token")
+//        UserDefaults.standard.removeObject(forKey: "userID")
 //        UserDefaults.standard.synchronize()
         loadFromUserDefaults()
     }
@@ -77,6 +77,9 @@ class AppState: ObservableObject, AuthProviding {
         }
         if let savedUserID = UserDefaults.standard.string(forKey: "userID"), userID == nil {
             userID = savedUserID
+        }
+        if server != nil && token != nil && userID != nil {
+            isAuthenticated = true
         }
     }
 

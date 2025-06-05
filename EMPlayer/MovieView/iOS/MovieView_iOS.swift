@@ -10,6 +10,30 @@
 import AVKit
 import SwiftUI
 
+import SwiftUI
+
+extension View {
+    func prefersHomeIndicatorAutoHidden() -> some View {
+        background(HiddenHomeIndicatorHostingController())
+    }
+}
+
+struct HiddenHomeIndicatorHostingController: UIViewControllerRepresentable {
+    typealias UIViewControllerType = UIViewController
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        HiddenHomeIndicatorViewController(rootView: AnyView(EmptyView()))
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+final class HiddenHomeIndicatorViewController: UIHostingController<AnyView> {
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        return true
+    }
+}
+
 struct MovieView: View {
     @StateObject private var viewController: MovieViewController
     @Environment(\.scenePhase) private var scenePhase
@@ -29,7 +53,7 @@ struct MovieView: View {
             }
             .task {
                 await viewController.fetch()
-            }
+            }.prefersHomeIndicatorAutoHidden()
     }
 }
 

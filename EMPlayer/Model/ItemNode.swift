@@ -39,46 +39,102 @@ enum ItemNodeType: Equatable {
 }
 
 final class ItemNode: ObservableObject, Identifiable, Hashable {
-
-    let item: ItemNodeType
-    @Published var children: [ItemNode]
+    
+    @Published var item: ItemNodeType
+    @Published var children: [ItemNode] = []
     @Published var isLoading = false
     @Published var loadError: Error? = nil
     @Published var selected: Bool = false
     
-    var customID: String {
-        return item.id
-    }
+    let uuid = UUID()
     
-    init(item: BaseItem?, children: [ItemNode]? = nil) {
-        self.children = children ?? []
-        guard let item = item else {
+    init(item: BaseItem?) {
+        if let base = item {
+            self.item = ItemNode.wrap(baseItem: base)
+        } else {
             self.item = .root
-            return
-        }
-        
-        switch item.type {
-        case .video:
-            self.item = .video(item)
-        case .movie:
-            self.item = .movie(item)
-        case .musicVideo:
-            self.item = .musicVideo(item)
-        case .series:
-            self.item = .series(item)
-        case .episode:
-            self.item = .episode(item)
-        case .season:
-            self.item = .season(item)
-        case .boxSet:
-            self.item = .boxSet(item)
-        case .collectionFolder:
-            self.item = .collection(item)
-        default:
-            self.item = .unknown
         }
     }
     
+    init(item: BaseItem?, children: [ItemNode] = []) {
+        if let base = item {
+            self.item = ItemNode.wrap(baseItem: base)
+            self.children = children
+        } else {
+            self.item = .root
+            self.children = children
+        }
+    }
+    
+    init(nodeType: ItemNodeType, children: [ItemNode] = []) {
+        self.item = nodeType
+        self.children = children
+    }
+
+    var baseItem: BaseItem? {
+        switch item {
+        case .movie(let b), .video(let b), .musicVideo(let b), .episode(let b),
+             .series(let b), .season(let b), .collection(let b), .boxSet(let b):
+            return b
+        default:
+            return nil
+        }
+    }
+
+    var customID: String {
+        item.id
+    }
+
+    static func wrap(baseItem: BaseItem) -> ItemNodeType {
+        switch baseItem.type {
+        case .video:           return .video(baseItem)
+        case .movie:           return .movie(baseItem)
+        case .musicVideo:      return .musicVideo(baseItem)
+        case .series:          return .series(baseItem)
+        case .episode:         return .episode(baseItem)
+        case .season:          return .season(baseItem)
+        case .boxSet:          return .boxSet(baseItem)
+        case .collectionFolder:return .collection(baseItem)
+        default:               return .unknown
+        }
+    }
+
+    // MARK: - 非同期データロード処理
+
+    @MainActor
+    func loadChildren(using repository: ItemRepository) async {
+        guard let baseItem = self.baseItem else { return }
+        isLoading = true
+        loadError = nil
+        
+        do {
+            let rawChildren = try await repository.children(of: baseItem)
+            self.children = rawChildren.map { ItemNode(nodeType: ItemNode.wrap(baseItem: $0)) }
+
+            // 子要素に詳細データを読み込む（オプション）
+            for i in 0..<children.count {
+                await children[i].updateWithDetail(using: repository)
+            }
+        } catch {
+            loadError = error
+        }
+
+        isLoading = false
+    }
+
+    @MainActor
+    func updateWithDetail(using repository: ItemRepository) async {
+        guard let baseItem = self.baseItem else { return }
+        do {
+            let detailed = try await repository.detail(of: baseItem)
+            self.item = ItemNode.wrap(baseItem: detailed)
+        } catch {
+            self.loadError = error
+        }
+    }
+
+    // MARK: - Identifiable / Hashable
+
     static func == (lhs: ItemNode, rhs: ItemNode) -> Bool {
         lhs.customID == rhs.customID
     }
@@ -86,18 +142,254 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(customID)
     }
-    
+
+    // MARK: - 表示用
+
     func display() -> String {
         switch self.item {
-        case .root:               return "Root"
-        case .movie(let b):       return b.name
-        case .series(let b):      return b.name
-        case .season(let b):      return b.name
-        case .episode(let b):     return b.name
-        case .collection(let b):  return b.name
-        case .boxSet(let b):       return b.name
-        case .musicVideo(let b):  return b.name
-        default:               return "Unknown"
+        case .root:              return "Root"
+        case .movie(let b), .series(let b), .season(let b),
+             .episode(let b), .collection(let b), .boxSet(let b),
+             .musicVideo(let b): return b.name
+        default:                 return "Unknown"
         }
     }
 }
+
+extension ItemNode {
+    static func dummySeries() -> ItemNode {
+        let series = BaseItem.createSeriesData()
+
+        let seriesNode = ItemNode(item: series)
+
+        let seasons = BaseItem.createSeasonData(series: series)
+
+        let seasonNodes = seasons.map { ItemNode(item: $0) }
+
+        for i in 0..<seasonNodes.count {
+            let episodes = BaseItem.createEpisodeData(season: seasons[i])
+            let episodeNodes = episodes.map { ItemNode(item: $0) }
+            seasonNodes[i].children = episodeNodes
+        }
+
+        seriesNode.children = seasonNodes
+
+        print(seriesNode)
+
+        for node in seriesNode.children {
+            print("Season: \(node.display())")
+            for episode in node.children {
+                print("  Episode: \(episode.display())")
+            }
+        }
+
+        return seriesNode
+    }
+
+    static func dummyCollection() -> ItemNode {
+        let series_array = [
+            dummySeries(),
+            dummySeries(),
+            dummySeries(),
+            dummySeries()
+        ]
+        let item = BaseItem(name: "ダミーコレクション",
+                        originalTitle: nil,
+                        id: UUID().uuidString,
+                        sourceType: nil,
+                        hasSubtitle: nil,
+                        path: nil,
+                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+                        aspectRatio: nil,
+                        isHD: nil,
+                        seriesId: nil,
+                        seriesName: nil,
+                        seasonName: nil,
+                        width: nil,
+                        height: nil,
+                        mediaSource: nil,
+                        mediaStreams: nil,
+                        indexNumber: nil,
+                        isFolder: nil,
+                        type: .boxSet,
+                        userData: nil,
+                        imageTags: nil,
+                        collectionType: nil)
+        return ItemNode(item: item, children: series_array)
+    }
+    
+    @MainActor
+    func updateIfNeeded(using repository: ItemRepository) async {
+        guard let base = self.baseItem else { return }
+
+        if base.overview == nil || base.imageTags == nil {
+            do {
+                let detailed = try await repository.detail(of: base)
+                self.item = ItemNode.wrap(baseItem: detailed)
+            } catch {
+                self.loadError = error
+            }
+        }
+    }
+    
+    @MainActor
+    func loadChildren(using repository: ItemRepository, reload: Bool = false) async {
+        guard let baseItem = self.baseItem else { return }
+
+        if !reload && !children.isEmpty {
+            return  // すでにロード済み
+        }
+
+        isLoading = true
+        loadError = nil
+
+        do {
+            let rawChildren = try await repository.children(of: baseItem)
+            self.children = rawChildren.map { ItemNode(nodeType: ItemNode.wrap(baseItem: $0)) }
+
+            // オプション：詳細取得はView側に任せる場合は省略可能
+        } catch {
+            loadError = error
+        }
+
+        isLoading = false
+    }
+}
+
+
+//
+//final class ItemNode: ObservableObject, Identifiable, Hashable {
+//
+//    let item: ItemNodeType
+//    let uuid = UUID()
+//    @Published var children: [ItemNode]
+//    @Published var isLoading = false
+//    @Published var loadError: Error? = nil
+//    @Published var selected: Bool = false
+//    
+//    var customID: String {
+//        return item.id
+//    }
+//    
+//    var baseItem: BaseItem? {
+//        switch item {
+//        case .movie(let b), .video(let b), .musicVideo(let b), .episode(let b),
+//                .series(let b), .season(let b), .collection(let b), .boxSet(let b):
+//            return b
+//        default:
+//            return nil
+//        }
+//    }
+//        
+//    init(item: BaseItem?, children: [ItemNode]? = nil) {
+//        self.children = children ?? []
+//        guard let item = item else {
+//            self.item = .root
+//            return
+//        }
+//        
+//        switch item.type {
+//        case .video:
+//            self.item = .video(item)
+//        case .movie:
+//            self.item = .movie(item)
+//        case .musicVideo:
+//            self.item = .musicVideo(item)
+//        case .series:
+//            self.item = .series(item)
+//        case .episode:
+//            self.item = .episode(item)
+//        case .season:
+//            self.item = .season(item)
+//        case .boxSet:
+//            self.item = .boxSet(item)
+//        case .collectionFolder:
+//            self.item = .collection(item)
+//        default:
+//            self.item = .unknown
+//        }
+//    }
+//    
+//    static func == (lhs: ItemNode, rhs: ItemNode) -> Bool {
+//        lhs.customID == rhs.customID
+//    }
+//
+//    func hash(into hasher: inout Hasher) {
+//        hasher.combine(customID)
+//    }
+//    
+//    func display() -> String {
+//        switch self.item {
+//        case .root:               return "Root"
+//        case .movie(let b):       return b.name
+//        case .series(let b):      return b.name
+//        case .season(let b):      return b.name
+//        case .episode(let b):     return b.name
+//        case .collection(let b):  return b.name
+//        case .boxSet(let b):       return b.name
+//        case .musicVideo(let b):  return b.name
+//        default:               return "Unknown"
+//        }
+//    }
+//    
+//    static func dummySeries() -> ItemNode {
+//        let series = BaseItem.createSeriesData()
+//        
+//        let seriesNode = ItemNode(item: series)
+//        
+//        let seasons = BaseItem.createSeasonData(series: series)
+//        
+//        let seasonNodes = seasons.map { ItemNode(item: $0) }
+//        
+//        for i in 0..<seasonNodes.count {
+//            let episodes = BaseItem.createEpisodeData(season: seasons[i])
+//            let episodeNodes = episodes.map { ItemNode(item: $0) }
+//            seasonNodes[i].children = episodeNodes
+//        }
+//        
+//        seriesNode.children = seasonNodes
+//        
+//        print(seriesNode)
+//        
+//        for node in seriesNode.children {
+//            print("Season: \(node.display())")
+//            for episode in node.children {
+//                print("  Episode: \(episode.display())")
+//            }
+//        }
+//        
+//        return seriesNode
+//    }
+//    
+//    static func dummyCollection() -> ItemNode {
+//        let series_array = [
+//            dummySeries(),
+//            dummySeries(),
+//            dummySeries(),
+//            dummySeries()
+//        ]
+//        let item = BaseItem(name: "ダミーコレクション",
+//                        originalTitle: nil,
+//                        id: UUID().uuidString,
+//                        sourceType: nil,
+//                        hasSubtitle: nil,
+//                        path: nil,
+//                        overview: "to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. to be written. ",
+//                        aspectRatio: nil,
+//                        isHD: nil,
+//                        seriesId: nil,
+//                        seriesName: nil,
+//                        seasonName: nil,
+//                        width: nil,
+//                        height: nil,
+//                        mediaSource: nil,
+//                        mediaStreams: nil,
+//                        indexNumber: nil,
+//                        isFolder: nil,
+//                        type: .boxSet,
+//                        userData: nil,
+//                        imageTags: nil,
+//                        collectionType: nil)
+//        return ItemNode(item: item, children: series_array)
+//    }
+//}

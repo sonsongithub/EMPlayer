@@ -47,15 +47,19 @@ struct RootView: View {
             .navigationDestination(for: ItemNode.self) { node in
                 switch node.item {
                 case let .collection(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case let .series(base):
-                    CollectionView(node: node)
+                    SeriesView(node: node)
                         .environmentObject(itemRepository)
                         .environmentObject(drill)
                         .environmentObject(appState)
@@ -63,21 +67,29 @@ struct RootView: View {
                         .environmentObject(authService)
                         .navigationTitle(base.name)
                 case let .boxSet(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case let .season(base):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
+                    GeometryReader { geometry in
+                        let strategy = CollectionViewStrategy.resolve(using: geometry)
+                        CollectionView(node: node)
+                            .environmentObject(itemRepository)
+                            .environmentObject(drill)
+                            .environmentObject(appState)
+                            .environmentObject(accountManager)
+                            .environmentObject(authService)
+                            .navigationTitle(base.name)
+                            .environment(\.collectionViewStrategy, strategy)
+                    }
                 case .movie(let base), .episode(let base):
                     MovieView(item: base,
                                  appState: appState,
@@ -91,6 +103,19 @@ struct RootView: View {
                                  .environmentObject(authService)
                 default:
                     Text("error")
+                }
+            }
+        }
+        .onAppear() {
+            if appState.isAuthenticated {
+                drill.reset()
+                Task {
+                    let items = try await itemRepository.root()
+                    print("items: \(items.count)")
+                    let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                    DispatchQueue.main.async {
+                        drill.root = ItemNode(item: nil, children: children)
+                    }
                 }
             }
         }

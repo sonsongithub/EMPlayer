@@ -1,16 +1,16 @@
 //
-//  MovieiOSView.swift
+//  MovieView_iOS.swift
 //  EMPlayer
 //
 //  Created by sonson on 2025/05/18.
 //
 
+#if os(iOS)
+
 import AVKit
 import SwiftUI
 
-#if os(iOS)
-
-struct MovieiOSView: View {
+struct MovieView: View {
     @StateObject private var viewController: MovieViewController
     @Environment(\.scenePhase) private var scenePhase
     var onClose: () -> Void
@@ -28,14 +28,13 @@ struct MovieiOSView: View {
                 viewController.player = nil
             }
             .task {
-                print("MovieiOSView task")
                 await viewController.fetch()
             }
     }
 }
 
 #Preview {
-    MovieiOSView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+    MovieView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
 }
 
 #endif

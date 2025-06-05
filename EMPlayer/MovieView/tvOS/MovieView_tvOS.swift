@@ -5,17 +5,14 @@
 //  Created by sonson on 2025/05/18.
 //
 
+#if os(tvOS)
 
 import AVKit
 import SwiftUI
 
-enum ContentError: Error {
-    case notFoundSeason
-}
 
-#if os(tvOS)
 
-struct MovietvOSView: View {
+struct MovieView: View {
     @StateObject private var viewController: MovieViewController
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
@@ -82,7 +79,7 @@ struct MovietvOSView: View {
 }
 
 #Preview {
-    MovietvOSView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+    MovieView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
 }
 
 #endif

@@ -34,8 +34,6 @@ private func createMetadataItem(for identifier: AVMetadataIdentifier,
     return item.copy() as! AVMetadataItem
 }
 
-
-
 final class MovieViewController: PlayerViewModel {
     let appState: AppState
     let itemRepository: ItemRepository
@@ -120,15 +118,12 @@ final class MovieViewController: PlayerViewModel {
                 let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
                 DispatchQueue.main.async {
                     
-                    
-                    
                     self.playerItem = AVPlayerItem(asset: asset)
 #if os(tvOS)
                     self.playerItem?.externalMetadata = createMetadataItems(for: detail)
 #endif
                     self.player?.play()
                 }
-                
                 
             } catch {
                 print("Error: \(error)")

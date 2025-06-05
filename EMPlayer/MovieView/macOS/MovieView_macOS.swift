@@ -1,16 +1,15 @@
 //
-//  MovieMacView.swift
+//  MovieView_macOS.swift
 //  EMPlayer
 //
 //  Created by sonson on 2025/05/18.
 //
 
+#if os(macOS)
 
 import AVKit
 import os
 import SwiftUI
-
-#if os(macOS)
 
 struct WindowAccessor: NSViewRepresentable {
     var callback: (NSWindow) -> Void
@@ -27,7 +26,7 @@ struct WindowAccessor: NSViewRepresentable {
     func updateNSView(_: NSView, context _: Context) {}
 }
 
-struct MovieMacView: View {
+struct MovieView: View {
     @StateObject private var vm: MovieViewController
     var onClose: () -> Void
     // 既存ウィンドウ値保持
@@ -99,7 +98,7 @@ struct MovieMacView: View {
 }
 
 #Preview {
-    MovieMacView(item: BaseItem.dummy, app: AppState(), repo: ItemRepository(authProviding: AppState())) {}
+    MovieView(item: BaseItem.dummy, app: AppState(), repo: ItemRepository(authProviding: AppState())) {}
 }
 
 #endif

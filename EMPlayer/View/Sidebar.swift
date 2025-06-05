@@ -9,7 +9,7 @@ import SwiftUI
 
 #if os(macOS)
 
-struct AuthenticationSubView: View {
+struct Sidebar: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var accountManager: AccountManager
     @EnvironmentObject var authService: AuthService
@@ -19,54 +19,49 @@ struct AuthenticationSubView: View {
     
     @State private var selectedServer: ServerInfo? = nil
     @State private var showLoginSheet = false
+    @State private var showAlert = false
+    @State private var showErrorAlert = false
     
-    var header: some View {
-        HStack {
-            Text("Servers")
-            Button("+", action: {
-                showLoginSheet = true
-            })
-            .padding(EdgeInsets(top: 0,leading: 0,bottom: 0,trailing: 0))
-
-            Spacer()
-        }
-    }
-    
-    var body: some View {
-        List {
-            Section(header: header) {
-                ForEach(serverDiscovery.servers, id: \.self) { server in
-                    Text(server.name)
-                        .onTapGesture {
-                            self.selectedServer = server
-                        }
-                }
-            }
-            Section(header: Text("History")) {
-                ForEach(accountManager.names, id: \.self) { name in
-                    Text(accountManager.displayName(for: name))
-                        .onTapGesture {
-                            if let account = accountManager.accounts[name] {
-                                self.appState.isAuthenticated = true
-                                self.appState.userID = account.userID
-                                self.appState.server = account.server
-                                self.appState.token = account.token
-                                self.selectedServer = nil
-                                self.drill.reset()
-                            }
-                        }
-                }
-            }
+    var rootView: some View {
+        Group {
             if let root = drill.root {
                 Section(header: Text("Root")) {
                     ForEach(root.children) { child in
                         Text(child.display())
                             .onTapGesture {
                                 Task { await open(child, from: -1) }
-                        }
+                            }
                     }
                 }
             }
+        }
+    }
+
+    var body: some View {
+        List {
+            ServerHistoryView {
+                // didPushPlus
+                showLoginSheet = true
+            } didPushTrash: {
+                // didPushTrash
+                showAlert = true
+            } didPushServer: { serverInfo in
+                self.selectedServer = serverInfo
+            } didPushHistory: { account in
+                self.appState.isAuthenticated = true
+                self.appState.userID = account.userID
+                self.appState.server = account.server
+                self.appState.token = account.token
+                self.selectedServer = nil
+                self.drill.reset()
+            }
+            .environmentObject(appState)
+            .environmentObject(accountManager)
+            .environmentObject(itemRepository)
+            .environmentObject(serverDiscovery)
+            .environmentObject(authService)
+            .environmentObject(drill)
+            rootView
         }
         .sheet(isPresented: $showLoginSheet) {
                     LoginToServerView()
@@ -85,8 +80,14 @@ struct AuthenticationSubView: View {
                 .environmentObject(authService)
                 .environmentObject(drill)
         }
+        .alert("Are you sure to delete your history?", isPresented: $showAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { accountManager.deleteAll() }
+        } message: {
+            Text("This operation cannot be undone.")
+        }
     }
-    // タップ時
+    
     @MainActor
     private func open(_ child: ItemNode, from level: Int) async {
         // ① deeper or play

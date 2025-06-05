@@ -14,9 +14,6 @@
         }
       }
     },
-    "+" : {
-
-    },
     "a" : {
 
     },
@@ -41,9 +38,6 @@
     "error" : {
 
     },
-    "Found servers" : {
-
-    },
     "History" : {
 
     },
@@ -60,12 +54,6 @@
 
     },
     "Login to %@" : {
-
-    },
-    "Login to server" : {
-
-    },
-    "Login: %@" : {
 
     },
     "No server selected" : {
@@ -86,13 +74,16 @@
     "Search" : {
 
     },
-    "Select server" : {
-
-    },
     "Servers" : {
 
     },
     "This operation cannot be undone." : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Unknown item type" : {
 
     },
     "User name" : {

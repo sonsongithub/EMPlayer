@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-#if os(macOS)
-
 struct LoginSheetView: View {
     
     @EnvironmentObject var appState: AppState
@@ -29,11 +27,15 @@ struct LoginSheetView: View {
                     .font(.headline)
                 
                 TextField("Username", text: $username)
+                #if os(macOS) || os(iOS)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
+                #endif
                     .padding(.horizontal)
 
                 SecureField("Password", text: $password)
+#if os(macOS) || os(iOS)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
+                #endif
                     .padding(.horizontal)
                 
                 HStack {
@@ -44,7 +46,9 @@ struct LoginSheetView: View {
                     Button("Login") {
                         self.login()
                     }
+#if os(macOS) || os(iOS)
                     .keyboardShortcut(.defaultAction)
+                    #endif
                 }
                 .padding(.horizontal)
             } else {
@@ -53,7 +57,6 @@ struct LoginSheetView: View {
             }
         }
         .padding()
-        .frame(width: 400)
     }
     
     func login() {
@@ -90,5 +93,3 @@ struct LoginSheetView: View {
         }
     }
 }
-
-#endif

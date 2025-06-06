@@ -9,7 +9,7 @@ import AVKit
 import os
 import SwiftUI
 
-struct CardContentView: View {
+struct EpisodeContent: View {
     
     enum Orientation {
         case portrait
@@ -18,7 +18,7 @@ struct CardContentView: View {
     
     let appState: AppState
     
-    @Environment(\.seriesViewStrategy) var strategy
+    @Environment(\.episodeViewStrategy) var strategy
     
     @ObservedObject var node: ItemNode
     let id: UUID
@@ -43,20 +43,20 @@ struct CardContentView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             if let index = item.indexNumber {
                                 Text("\(index). \(item.name)")
-                                    .font(strategy.episodeTitleFont)
+                                    .font(strategy.titleFont)
                                     .lineLimit(1)
                                     .padding(.bottom, 10)
                                     .frame(alignment: .leading)
                                     .foregroundColor(.black)
                             } else {
                                 Text(item.name)
-                                    .font(strategy.episodeTitleFont)
+                                    .font(strategy.titleFont)
                                     .lineLimit(2)
                                     .frame(alignment: .leading)
                                     .foregroundColor(.black)
                             }
                             Text(item.overview ?? "")
-                                .font(strategy.episodeTitleFont)
+                                .font(strategy.titleFont)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(4)
                                 .multilineTextAlignment(.leading)
@@ -79,15 +79,15 @@ struct CardContentView: View {
                         }
                         if let index = item.indexNumber {
                             Text("\(index). \(item.name)")
-                                .font(strategy.episodeTitleFont)
+                                .font(strategy.titleFont)
                                 .lineLimit(3)
                         } else {
                             Text(item.name)
-                                .font(strategy.episodeTitleFont)
+                                .font(strategy.titleFont)
                                 .lineLimit(3)
                         }
                         Text(item.overview ?? "")
-                            .font(strategy.episodeOverviewFont)
+                            .font(strategy.overviewFont)
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
                         Spacer(minLength: 0)

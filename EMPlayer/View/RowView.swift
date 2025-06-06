@@ -29,6 +29,27 @@ struct RowView: View {
                     .zIndex(focusedID == item.uuid ? 1 : 0)
             }
         }
-        .padding()
+    }
+}
+
+#Preview {
+    let appState = AppState()
+    let drill = DrillDownStore()
+    let accountManager = AccountManager()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    let children = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .series))
+    }
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children)
+    
+    GeometryReader { geometry in
+        let strategy = CollectionViewStrategy.resolve(using: geometry)
+        CollectionView(node: node)
+            .environmentObject(appState)
+            .environmentObject(itemRepository)
+            .environmentObject(drill)
+            .environmentObject(accountManager)
+            .environment(\.collectionViewStrategy, strategy)
     }
 }

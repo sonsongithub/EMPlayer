@@ -15,26 +15,36 @@ extension BaseItem {
     static func createDummyURLforPath(type: ItemType) -> String? {
         
         let movieImages = [
-            Bundle.main.url(forResource: "movie01", withExtension: "png")!,
-            Bundle.main.url(forResource: "movie02", withExtension: "png")!,
-            Bundle.main.url(forResource: "movie03", withExtension: "png")!,
+            Bundle.main.url(forResource: "movie01", withExtension: "png"),
+            Bundle.main.url(forResource: "movie02", withExtension: "png"),
+            Bundle.main.url(forResource: "movie03", withExtension: "png"),
+            nil
         ]
         let previewImages = [
-            Bundle.main.url(forResource: "preview01", withExtension: "png")!,
-            Bundle.main.url(forResource: "preview02", withExtension: "png")!,
-            Bundle.main.url(forResource: "preview03", withExtension: "png")!,
+            Bundle.main.url(forResource: "preview01", withExtension: "png"),
+            Bundle.main.url(forResource: "preview02", withExtension: "png"),
+            Bundle.main.url(forResource: "preview03", withExtension: "png"),
+            nil
         ]
         
-        switch type {
-        case .movie:
-            return movieImages.randomElement()!.absoluteString
-        case .episode, .video, .boxSet, .folder, .collectionFolder:
-            return previewImages.randomElement()!.absoluteString
-        case .series:
-            return movieImages.randomElement()!.absoluteString
-        default:
+        let url: URL? = {
+            switch type {
+            case .movie:
+                return movieImages.randomElement()!
+            case .episode, .video, .boxSet, .folder, .collectionFolder:
+                return previewImages.randomElement()!
+            case .series:
+                return movieImages.randomElement()!
+            default:
+                return nil
+            }
+        }()
+        
+        guard let url = url else {
             return nil
         }
+        
+        return url.absoluteString
     }
     static var dummy: BaseItem = BaseItem(name: "ガンダム",
                                       originalTitle: nil,

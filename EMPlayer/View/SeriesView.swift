@@ -27,17 +27,18 @@ struct EpisodeView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let episodeViewStrategy = EpisodeContentStrategy(parentStrategy: strategy)
             if case .episode(_) = node.item {
                 Button {
                     drill.stack.append(node)
                 } label: {
-                    switch strategy.episodeLayout {
+                    switch episodeViewStrategy.contentLayout {
                     case .landscape:
-                        CardContentView(appState: appState, node: node, id: node.uuid, rotation: .landscape)
-                            .padding(strategy.cardContentViewPadding)
+                        EpisodeContent(appState: appState, node: node, id: node.uuid, rotation: .landscape)
+                            .padding(episodeViewStrategy.padding)
                     case .portrait:
-                        CardContentView(appState: appState, node: node, id: node.uuid, rotation: .portrait)
-                            .padding(strategy.cardContentViewPadding)
+                        EpisodeContent(appState: appState, node: node, id: node.uuid, rotation: .portrait)
+                            .padding(episodeViewStrategy.padding)
                     }
                 }
                 .onAppear() {
@@ -59,6 +60,7 @@ struct SeasonView: View {
     @ObservedObject var node: ItemNode
     
     var body: some View {
+        let episodeViewStrategy = EpisodeContentStrategy(parentStrategy: strategy)
         switch strategy.scrollDirection {
         case .vertical:
             VStack(spacing: strategy.episodeVerticalSpace) {
@@ -69,7 +71,7 @@ struct SeasonView: View {
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
                             .environment(\.seriesViewStrategy, strategy)
-                            .frame(width: strategy.episodeWidth, height: strategy.episodeHeight)
+                            .frame(width: episodeViewStrategy.width, height: episodeViewStrategy.height)
                     }
                 }
                 .scrollClipDisabled()
@@ -91,7 +93,7 @@ struct SeasonView: View {
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
                             .environment(\.seriesViewStrategy, strategy)
-                            .frame(width: strategy.episodeWidth, height: strategy.episodeHeight)
+                            .frame(width: episodeViewStrategy.width, height: episodeViewStrategy.height)
                     }
                 }
                 .scrollClipDisabled()
@@ -108,11 +110,12 @@ struct SeasonView: View {
     }
 }
 
-struct SeriesInfoView: View {
+struct SeriesInfo: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     @Environment(\.seriesViewStrategy) var strategy
+    @Environment(\.seriesInfoViewStrategy) var infoViewStrategy
     @ObservedObject var node: ItemNode
     
     var body: some View {
@@ -132,14 +135,14 @@ struct SeriesInfoView: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        if strategy.infoViewHasTitle {
+                        if infoViewStrategy.hasTitle {
                             Text(baseItem.name)
-                                .font(strategy.infoViewTitleFont)
+                                .font(infoViewStrategy.titleFont)
                                 .bold()
                                 .padding()
                         }
                         Text(baseItem.overview ?? "")
-                            .font(strategy.infoViewOverviewFont)
+                            .font(infoViewStrategy.overviewFont)
                             .padding()
                     }
                 }
@@ -175,13 +178,13 @@ struct RootSeasonView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     @EnvironmentObject var viewModel: SeriesViewModel
-    @Environment(\.seriesViewStrategy) var strategy
+    @Environment(\.seriesViewStrategy) var parentStrategy
     @ObservedObject var node: ItemNode
     
     var body: some View {
         ScrollViewReader { proxy in
             Group {
-                switch strategy.scrollDirection {
+                switch parentStrategy.scrollDirection {
                 case .horizontal:
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 20) {
@@ -191,7 +194,7 @@ struct RootSeasonView: View {
                                         .environmentObject(appState)
                                         .environmentObject(itemRepository)
                                         .environmentObject(drill)
-                                        .environment(\.seriesViewStrategy, strategy)
+                                        .environment(\.seriesViewStrategy, parentStrategy)
                                         .id(season.uuid)
                                 }
                             }
@@ -206,7 +209,7 @@ struct RootSeasonView: View {
                                         .environmentObject(appState)
                                         .environmentObject(itemRepository)
                                         .environmentObject(drill)
-                                        .environment(\.seriesViewStrategy, strategy)
+                                        .environment(\.seriesViewStrategy, parentStrategy)
                                         .id(season.uuid)
                                 }
                             }
@@ -217,7 +220,7 @@ struct RootSeasonView: View {
                 guard let selectedSeason  = viewModel.selectedSeason else { return }
                 if viewModel.shouldScroll() {
                     withAnimation {
-                        if strategy.scrollDirection == .horizontal {
+                        if parentStrategy.scrollDirection == .horizontal {
                             proxy.scrollTo(selectedSeason.uuid, anchor: .leading)
                         } else {
                             proxy.scrollTo(selectedSeason.uuid, anchor: .top)
@@ -227,7 +230,7 @@ struct RootSeasonView: View {
                 
             }
             .onPreferenceChange(VisibleItemPreferenceKey.self) { values in
-                let center = (strategy.scrollDirection == .horizontal) ? UIScreen.main.bounds.midX : UIScreen.main.bounds.midY
+                let center = (parentStrategy.scrollDirection == .horizontal) ? UIScreen.main.bounds.midX : UIScreen.main.bounds.midY
                 if let closest = values.min(by: { abs($0.value - center) < abs($1.value - center) }) {
                     for child in node.children {
                         let season_ids = child.children.map { $0.uuid }
@@ -261,14 +264,16 @@ struct SeriesView: View {
     var body: some View {
         GeometryReader { geometry in
             let strategy = SeriesViewStrategy.resolve(using: geometry)
+            let infoViewStrategy = SeriesInfoStrategy.resolve(using: geometry)
             VStack(alignment: .leading, spacing: 0) {
-                SeriesInfoView(node: node)
+                SeriesInfo(node: node)
                     .environmentObject(appState)
                     .environmentObject(itemRepository)
                     .environmentObject(drill)
-                    .frame(height: strategy.infoViewHeight)
+                    .frame(height: infoViewStrategy.height)
                     .environment(\.seriesViewStrategy, strategy)
-                    .padding(.horizontal, strategy.infoViewHorizontalPadding)
+                    .environment(\.seriesInfoViewStrategy, infoViewStrategy)
+                    .padding(.horizontal, infoViewStrategy.horizontalPadding)
                 Picker("Season", selection: Binding<ItemNode?>(
                     get: { viewModel.selectedSeason },
                     set: { newValue in

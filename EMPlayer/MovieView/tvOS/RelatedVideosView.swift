@@ -25,7 +25,7 @@ struct RelatedVideosView: View {
                         Button {
                             onPush(item)
                         } label: {
-                            CardContentView(appState: appState, node: item, id: item.uuid, rotation: .landscape)
+                            EpisodeContent(appState: appState, node: item, id: item.uuid, rotation: .landscape)
                                 .padding([.leading, .top, .bottom], 16)
                                 .padding(.trailing, 20)
                                 .frame(height: 230)

@@ -76,7 +76,7 @@ struct CollectionView: View {
             let columnWidth = (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow)
             let height = floor(columnWidth * 4 / 3.0 + 60)
             ScrollView {
-                VStack(alignment: .leading, spacing: horizontalSpacing) {
+                VStack(alignment: .leading, spacing: 0) {
                     let rows = self.node.children.chunked(into: itemPerRow)
                     ForEach(rows.indices, id: \.self) { rowIndex in
                         RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)

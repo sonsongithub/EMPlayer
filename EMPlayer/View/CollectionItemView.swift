@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+
+
 struct CollectionItemView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
@@ -32,25 +34,30 @@ struct CollectionItemView: View {
     }
     
     @ViewBuilder
-    func asyncImage(imageURL: URL) -> some View {
-        AsyncImage(url: imageURL) { phase in
-            switch phase {
-            case .empty:
-                ProgressView()
-            case .success(let image):
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .cornerRadius(12)
-            case .failure:
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
-            @unknown default:
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
+    func asyncImage(imageURL: URL?) -> some View {
+        if let imageURL = imageURL {
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                case .failure:
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                @unknown default:
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                }
             }
+        } else {
+            Image(systemName: "photo")
+                .resizable()
+                .scaledToFit()
         }
     }
     
@@ -64,23 +71,24 @@ struct CollectionItemView: View {
                         drill.stack.append(node)
                     } label: {
                         VStack(alignment: .center, spacing: verticalSpacing) {
-                            if let imageURL = imageURL {
-                                asyncImage(imageURL: imageURL)
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                            } else {
-                                Image(systemName: "photo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                            }
-
+                            asyncImage(imageURL: imageURL)
+                                .frame(width: geometry.size.width, height: geometry.size.height * 0.8)
+                                .clipped()
+                                .cornerRadius(12)
                             Text(item.name)
                                 .font(.caption2)
                                 .dynamicTypeSize(.xSmall)
                                 .lineLimit(2)
+                                .background(Color.green)
+                            Text(item.overview ?? "")
+                                .font(.caption)
+                                .dynamicTypeSize(.xSmall)
+                                .lineLimit(3)
+                                .foregroundStyle(.secondary)
+                                .background(Color.purple)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plain).background(Color.red)
                 } else {
                     Text("Unknown item type")
                 }
@@ -96,16 +104,22 @@ struct CollectionItemView: View {
 
 #Preview {
     let appState = AppState()
-    let baseItem = BaseItem.generateRandomItem(type: .series)
-    let itemNode = ItemNode(item: baseItem)
     let drill = DrillDownStore()
-    let columnWidth = Double(300)
-    let height = floor(columnWidth * 4.0 / 3.0 + 60)
-    CollectionItemView(node: itemNode   , isFocused: true)
-        .frame(width: columnWidth, height: height)
-        .environmentObject(appState)
-        .environmentObject(drill)
-#if os(tvOS)
-        .buttonStyle(.plain)
-#endif
+    let accountManager = AccountManager()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    let children = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .series))
+    }
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children)
+    
+    GeometryReader { geometry in
+        let strategy = CollectionViewStrategy.resolve(using: geometry)
+        CollectionView(node: node)
+            .environmentObject(appState)
+            .environmentObject(itemRepository)
+            .environmentObject(drill)
+            .environmentObject(accountManager)
+            .environment(\.collectionViewStrategy, strategy)
+    }
 }

@@ -5,6 +5,8 @@
 //  Created by sonson on 2025/05/29.
 //
 
+#if os(tvOS) || os(iOS)
+
 import AVKit
 import os
 import SwiftUI
@@ -47,20 +49,20 @@ struct EpisodeContent: View {
                                     .lineLimit(1)
                                     .padding(.bottom, 10)
                                     .frame(alignment: .leading)
-                                    .foregroundColor(.black)
+                                    .foregroundColor(strategy.titleColor)
                             } else {
                                 Text(item.name)
                                     .font(strategy.titleFont)
                                     .lineLimit(2)
                                     .frame(alignment: .leading)
-                                    .foregroundColor(.black)
+                                    .foregroundColor(strategy.titleColor)
                             }
                             Text(item.overview ?? "")
                                 .font(strategy.titleFont)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(4)
                                 .multilineTextAlignment(.leading)
-                                .foregroundColor(.black)
+                                .foregroundColor(strategy.overviewColor)
                             Spacer(minLength: 0)
                         }
                     }
@@ -80,15 +82,17 @@ struct EpisodeContent: View {
                         if let index = item.indexNumber {
                             Text("\(index). \(item.name)")
                                 .font(strategy.titleFont)
+                                .foregroundColor(strategy.titleColor)
                                 .lineLimit(3)
                         } else {
                             Text(item.name)
                                 .font(strategy.titleFont)
+                                .foregroundColor(strategy.titleColor)
                                 .lineLimit(3)
                         }
                         Text(item.overview ?? "")
                             .font(strategy.overviewFont)
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(strategy.overviewColor)
                             .lineLimit(3)
                         Spacer(minLength: 0)
                     }
@@ -99,8 +103,6 @@ struct EpisodeContent: View {
         }
     }
 }
-
-#if os(tvOS) || os(iOS)
 
 #Preview {
     let appState = AppState()

@@ -5,22 +5,16 @@
 //  Created by sonson on 2025/05/27.
 //
 
+#if os(tvOS) || os(iOS)
+
 import SwiftUI
-
-
 
 struct CollectionItemView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
-    
-    #if os(iOS)
-    let verticalSpacing: CGFloat = 8
-    #elseif os(tvOS)
-    let verticalSpacing: CGFloat = 4
-    #elseif os(macOS)
-    let verticalSpacing: CGFloat = 8
-    #endif
+    @Environment(\.collectionItemStrategy) var strategy
+
     let node: ItemNode
     let isFocused: Bool
     
@@ -64,33 +58,32 @@ struct CollectionItemView: View {
     var body: some View {
         GeometryReader { geometry in
             let (item, imageURL) = itemInfo()
-            
             Group {
                 if let item = item {
                     Button {
                         drill.stack.append(node)
                     } label: {
-                        VStack(alignment: .center, spacing: verticalSpacing) {
+                        VStack(alignment: .center, spacing: strategy.verticalSpacing) {
                             asyncImage(imageURL: imageURL)
-                                .frame(width: geometry.size.width, height: geometry.size.height * 0.8)
+                                .frame(width: geometry.size.width, height: geometry.size.height * strategy.ratioOfTeaserToHeight)
                                 .clipped()
-                                .cornerRadius(12)
+                                .cornerRadius(8)
                             Text(item.name)
-                                .font(.caption2)
-                                .dynamicTypeSize(.xSmall)
-                                .lineLimit(2)
-                                .background(Color.green)
+                                .font(strategy.titleFont)
+                                .lineLimit(strategy.titleLineLimit)
+                                .padding(strategy.titlePadding)
+                                .foregroundColor(strategy.titleColor)
                             Text(item.overview ?? "")
-                                .font(.caption)
-                                .dynamicTypeSize(.xSmall)
-                                .lineLimit(3)
-                                .foregroundStyle(.secondary)
-                                .background(Color.purple)
+                                .font(strategy.overviewFont)
+                                .padding(strategy.overviewPadding)
+                                .foregroundColor(strategy.overviewColor)
                         }
                     }
-                    .buttonStyle(.plain).background(Color.red)
+                    .buttonStyle(.plain)
                 } else {
+                    Spacer()
                     Text("Unknown item type")
+                    Spacer()
                 }
             }
             .onAppear {
@@ -123,3 +116,5 @@ struct CollectionItemView: View {
             .environment(\.collectionViewStrategy, strategy)
     }
 }
+
+#endif

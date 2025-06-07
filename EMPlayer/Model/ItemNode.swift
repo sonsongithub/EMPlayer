@@ -45,6 +45,7 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
     @Published var isLoading = false
     @Published var loadError: Error? = nil
     @Published var selected: Bool = false
+    @Published var apectRatio: Double? = nil
     
     let uuid = UUID()
     

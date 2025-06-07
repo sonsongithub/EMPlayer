@@ -15,49 +15,6 @@ extension Array {
     }
 }
 
-struct CollectionViewStrategyKey: EnvironmentKey {
-    static let defaultValue: CollectionViewStrategy = .default
-}
-
-extension EnvironmentValues {
-    var collectionViewStrategy: CollectionViewStrategy {
-        get { self[CollectionViewStrategyKey.self] }
-        set { self[CollectionViewStrategyKey.self] = newValue }
-    }
-}
-
-struct CollectionViewStrategy {
-    
-    let itemsPerRow: Int
-    
-    init(isPad: Bool, isPortrait: Bool) {
-        #if os(iOS) || os(tvOS)
-        switch (isPad, isPortrait) {
-            case (true, true):
-                self.itemsPerRow = 4
-            case (true, false):
-                self.itemsPerRow = 6
-            case (false, true):
-                self.itemsPerRow = 2
-            case (false, false):
-                self.itemsPerRow = 3
-        }
-        #else
-        self.itemsPerRow = 6
-        #endif
-    }
-    
-    static let `default` = CollectionViewStrategy(isPad: false, isPortrait: true)
-    
-    static func resolve(using geometry: GeometryProxy) -> CollectionViewStrategy {
-        let size = geometry.size
-        let isPortrait = size.height >= size.width
-        let isPad = UIDevice.current.userInterfaceIdiom == .pad
-        return CollectionViewStrategy(isPad: isPad, isPortrait: isPortrait)
-    }
-    
-}
-
 #if os(iOS)
 
 struct CollectionView: View {
@@ -67,22 +24,21 @@ struct CollectionView: View {
     @ObservedObject var node: ItemNode
     @Environment(\.collectionViewStrategy) var strategy
     
-    let horizontalSpacing: CGFloat = 16
-    
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width
             let itemPerRow = strategy.itemsPerRow
-            let columnWidth = (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow)
-            let height = floor(columnWidth * 4 / 3.0 + 60)
+            let columnWidth = (availableWidth - (strategy.horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow)
+            let height = floor(columnWidth * strategy.itemAspectRatio)
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: strategy.verticalSpacing) {
                     let rows = self.node.children.chunked(into: itemPerRow)
                     ForEach(rows.indices, id: \.self) { rowIndex in
-                        RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
+                        RowView(items: rows[rowIndex], width: columnWidth, height: height)
                             .environmentObject(appState)
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
+                            .environment(\.collectionViewStrategy, strategy)
                     }
                 }
             }.frame(maxWidth: .infinity)

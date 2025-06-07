@@ -14,21 +14,20 @@ struct CollectionView: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     @ObservedObject var node: ItemNode
+    @Environment(\.collectionViewStrategy) var strategy
 
-    let itemPerRow: Int = 6
-    let space: CGFloat = 64
     let horizontalSpacing: CGFloat = 32
     
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width
-            let columnWidth = (availableWidth - (horizontalSpacing * CGFloat(itemPerRow + 1))) / CGFloat(itemPerRow)
-            let height = floor(columnWidth * 4 / 3.0 + 60)
+            let columnWidth = (availableWidth - (horizontalSpacing * CGFloat(strategy.itemsPerRow + 1))) / CGFloat(strategy.itemsPerRow)
+            let height = floor(columnWidth * strategy.itemAspectRatio)
             ScrollView {
-                VStack(alignment: .leading, spacing: space) {
-                    let rows = self.node.children.chunked(into: itemPerRow)
+                VStack(alignment: .leading, spacing: strategy.verticalSpacing) {
+                    let rows = self.node.children.chunked(into: strategy.itemsPerRow)
                     ForEach(rows.indices, id: \.self) { rowIndex in
-                        RowView(items: rows[rowIndex], width: columnWidth, height: height, horizontalSpacing: horizontalSpacing)
+                        RowView(items: rows[rowIndex], width: columnWidth, height: height)
                             .environmentObject(appState)
                             .environmentObject(itemRepository)
                             .environmentObject(drill)

@@ -5,6 +5,7 @@
 //  Created by sonson on 2025/05/27.
 //
 
+#if os(tvOS) || os(iOS)
 
 import SwiftUI
 
@@ -14,12 +15,14 @@ struct RowView: View {
     
     @EnvironmentObject var drill: DrillDownStore
     @FocusState private var focusedID: UUID?
+    @Environment(\.collectionViewStrategy) var parentStrategy
+    
     let items: [ItemNode]
     let width: CGFloat
     let height: CGFloat
-    let horizontalSpacing: CGFloat
     var body: some View {
-        HStack(spacing: horizontalSpacing) {
+        let strategy = CollectionItemStrategy.createFrom(parent: parentStrategy)
+        HStack(spacing: parentStrategy.horizontalSpacing) {
             ForEach(items, id: \.id) { item in
                 CollectionItemView(node: item, isFocused: (focusedID == item.uuid))
                     .frame(width: width, height: height)
@@ -27,6 +30,7 @@ struct RowView: View {
                     .environmentObject(itemRepository)
                     .focused($focusedID, equals: item.uuid)
                     .zIndex(focusedID == item.uuid ? 1 : 0)
+                    .environment(\.collectionItemStrategy, strategy)
             }
         }
     }
@@ -53,3 +57,5 @@ struct RowView: View {
             .environment(\.collectionViewStrategy, strategy)
     }
 }
+
+#endif

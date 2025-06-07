@@ -100,6 +100,7 @@ struct SeasonView: View {
 #if os(tvOS)
                 .buttonStyle(.card)
 #endif
+                .padding(episodeViewStrategy.padding)
             }
             .onAppear() {
                 Task {
@@ -309,7 +310,6 @@ struct SeriesView: View {
                         }
                     }
             }
-            .ignoresSafeArea(edges: [])
             .toolbar(tabBarVisibility, for: .tabBar)
             .onAppear() {
                 tabBarVisibility = .hidden
@@ -317,6 +317,7 @@ struct SeriesView: View {
             .onDisappear() {
                 tabBarVisibility = .visible
             }
+            .padding(strategy.padding)
         }
     }
 }
@@ -333,6 +334,9 @@ struct SeriesView: View {
             .environmentObject(drill)
         #if os(iOS)
             .navigationTitle("Test")
+        #endif
+        #if os(tvOS)
+            .ignoresSafeArea(edges: [.top, .bottom])
         #endif
     }
 }

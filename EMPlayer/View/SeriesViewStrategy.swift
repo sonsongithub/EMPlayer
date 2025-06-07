@@ -5,6 +5,8 @@
 //  Created by sonson on 2025/06/01.
 //
 
+#if os(iOS) || os(tvOS)
+
 import SwiftUI
 
 struct SeriesViewStrategyKey: EnvironmentKey {
@@ -35,7 +37,6 @@ extension EnvironmentValues {
         set { self[EpisodeContentStrategyKey.self] = newValue }
     }
 }
-
 
 struct SeriesInfoStrategy {
     
@@ -115,6 +116,8 @@ struct EpisodeContentStrategy {
     
     let overviewFont: Font
     let titleFont: Font
+    let overviewColor: Color
+    let titleColor: Color
     
     let padding: EdgeInsets
     
@@ -123,6 +126,9 @@ struct EpisodeContentStrategy {
         isPad = UIDevice.current.userInterfaceIdiom == .pad
         let isPortrait = parentStrategy.screenSize.height >= parentStrategy.screenSize.width
         screenSize = parentStrategy.screenSize
+        
+        titleColor = .primary
+        overviewColor = .secondary
         
         #if os(iOS)
         if isPad {
@@ -159,12 +165,12 @@ struct EpisodeContentStrategy {
         #else
         contentLayout = .portrait
         width = 400
-        height = screenSize.height * 0.55
-        verticalSpace = 8
-        horizontalSpace = 8
+        height = screenSize.height * 0.45
         titleFont = .caption
+        titleColor = .primary
         overviewFont = .footnote
-        padding = EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 20)
+        overviewColor = .secondary
+        padding = EdgeInsets(top: 32, leading: 16, bottom: 16, trailing: 20)
         #endif
     }
 
@@ -191,6 +197,7 @@ struct SeriesViewStrategy {
     let pickerMarginBottom: CGFloat
     let episodeVerticalSpace: CGFloat
     let episodeHorizontalSpace: CGFloat
+    let padding: EdgeInsets
     
     init(size: CGSize) {
         isPad = UIDevice.current.userInterfaceIdiom == .pad
@@ -226,12 +233,14 @@ struct SeriesViewStrategy {
                 episodeHorizontalSpace = 8
             }
         }
+        padding = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         #else
         scrollDirection = .horizontal
         pickerMarginTop = 8
-        pickerMarginBottom = 8
+        pickerMarginBottom = 0
         episodeVerticalSpace = 8
-        episodeHorizontalSpace = 8
+        episodeHorizontalSpace = 30
+        padding = EdgeInsets(top: 40, leading: 0, bottom: 40, trailing: 0)
         #endif
     }
 
@@ -242,8 +251,6 @@ struct SeriesViewStrategy {
         return SeriesViewStrategy(size: size)
     }
 }
-
-#if os(tvOS) || os(iOS)
 
 #Preview {
     let appState = AppState()

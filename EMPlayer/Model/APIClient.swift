@@ -126,7 +126,10 @@ class APIClient {
 //        else:
 //            raise Exception(f"Error searching items: {response.status_code} - {response.text}")
     
-    func searchItem(server: String, userID: String, token: String, query: String) async throws -> [BaseItem] {
+    func searchItem(query: String) async throws -> [BaseItem] {
+        
+        let (server, token, userID) = try getBasicInfomation()
+        
         guard var urlComponents = URLComponents(string: "\(server)/Items") else {
             throw APIClientError.cannotCreateURL
         }

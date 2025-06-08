@@ -47,7 +47,7 @@ struct RootView: View {
                         .environmentObject(appState)
                         .environmentObject(accountManager)
                         .environmentObject(authService)
-                        .ignoresSafeArea(edges: [.top, .bottom])
+                        .ignoresSafeArea(edges: [.bottom])
                 case .boxSet(_):
                     CollectionView(node: node)
                         .environmentObject(itemRepository)

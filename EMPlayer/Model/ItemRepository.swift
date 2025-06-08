@@ -30,8 +30,6 @@ final class ItemRepository : ObservableObject {
         return user
     }
     
-    
-    
     @MainActor
     func root() async throws -> [BaseItem] {
         let items = try await api.fetchUserView()
@@ -54,5 +52,11 @@ final class ItemRepository : ObservableObject {
     func detail(of itemID: String) async throws -> BaseItem {
         let item = try await api.fetchItemDetail(of: itemID)
         return item
+    }
+    
+    @MainActor
+    func search(query: String) async throws -> [BaseItem] {
+        let items = try await api.searchItem(query: query)
+        return items
     }
 }

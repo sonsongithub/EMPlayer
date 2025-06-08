@@ -310,13 +310,6 @@ struct SeriesView: View {
                         }
                     }
             }
-            .toolbar(tabBarVisibility, for: .tabBar)
-            .onAppear() {
-                tabBarVisibility = .hidden
-            }
-            .onDisappear() {
-                tabBarVisibility = .visible
-            }
             .padding(strategy.padding)
         }
     }

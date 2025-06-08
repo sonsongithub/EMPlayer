@@ -115,7 +115,7 @@ struct CollectionViewStrategy {
                 self.itemsPerRow = 3
         }
         horizontalSpacing = 16
-        itemAspectRatio = 5.5 / 3.0
+        itemAspectRatio = 6.0 / 3.0
         verticalSpacing = 20
 #elseif os(tvOS)
         isPortrait = false

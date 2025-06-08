@@ -127,10 +127,9 @@ struct EpisodeContentStrategy {
         let isPortrait = parentStrategy.screenSize.height >= parentStrategy.screenSize.width
         screenSize = parentStrategy.screenSize
         
+        #if os(iOS)
         titleColor = .primary
         overviewColor = .secondary
-        
-        #if os(iOS)
         if isPad {
             contentLayout = isPortrait ? .landscape : .portrait
             if isPortrait {

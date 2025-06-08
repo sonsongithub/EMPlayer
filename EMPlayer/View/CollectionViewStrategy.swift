@@ -46,7 +46,7 @@ struct CollectionItemStrategy {
     let overviewColor: Color
     
     init(screenSize: CGSize) {
-#if os(iOS) || os(tvOS)
+#if os(iOS)
         isPortrait = screenSize.height >= screenSize.width
         isPad = UIDevice.current.userInterfaceIdiom == .pad
         switch (isPad, isPortrait) {
@@ -73,8 +73,17 @@ struct CollectionItemStrategy {
         titleColor = .primary
         overviewColor = .secondary
 #elseif os(tvOS)
+        isPortrait = screenSize.height >= screenSize.width
+        isPad = UIDevice.current.userInterfaceIdiom == .pad
         verticalSpacing = 4
         ratioOfTeaserToHeight = 0.7
+        titleLineLimit = 2
+        titlePadding = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        overviewPadding = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+        titleFont = .caption
+        overviewFont = .caption2
+        titleColor = .primary
+        overviewColor = .secondary
 #endif
     }
     
@@ -120,10 +129,10 @@ struct CollectionViewStrategy {
 #elseif os(tvOS)
         isPortrait = false
         isPad = false
-        verticalSpacing = 4
+        verticalSpacing = 16
         itemsPerRow = 6
-        horizontalSpacing = 16
-        itemAspectRatio = 5.5 / 3.0
+        horizontalSpacing = 48
+        itemAspectRatio = 6.0 / 3.0
 #endif
     }
     

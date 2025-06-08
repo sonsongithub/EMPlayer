@@ -93,7 +93,7 @@ struct EpisodeContent: View {
                         Text(item.overview ?? "")
                             .font(strategy.overviewFont)
                             .foregroundColor(strategy.overviewColor)
-                            .lineLimit(3)
+                            .lineLimit(6)
                         Spacer(minLength: 0)
                     }
                 }

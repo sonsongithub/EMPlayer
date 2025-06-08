@@ -167,7 +167,7 @@ struct EpisodeContentStrategy {
         height = screenSize.height * 0.45
         titleFont = .caption
         titleColor = .primary
-        overviewFont = .footnote
+        overviewFont = .caption2
         overviewColor = .secondary
         padding = EdgeInsets(top: 32, leading: 16, bottom: 16, trailing: 20)
         #endif
@@ -238,7 +238,7 @@ struct SeriesViewStrategy {
         pickerMarginTop = 8
         pickerMarginBottom = 0
         episodeVerticalSpace = 8
-        episodeHorizontalSpace = 30
+        episodeHorizontalSpace = 0
         padding = EdgeInsets(top: 40, leading: 0, bottom: 40, trailing: 0)
         #endif
     }

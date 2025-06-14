@@ -2,10 +2,10 @@
 //  CollectionView.swift
 //  EMPlayer
 //
-//  Created by sonson on 2025/05/27.
+//  Created by sonson on 2025/06/14.
 //
 
-#if os(tvOS)
+#if os(tvOS) || os(iOS)
 
 import SwiftUI
 
@@ -16,23 +16,32 @@ struct CollectionView: View {
     @ObservedObject var node: ItemNode
     @Environment(\.collectionViewStrategy) var strategy
 
-    let horizontalSpacing: CGFloat = 32
-    
+    @FocusState private var focusedID: UUID?
+
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width
-            let columnWidth = (availableWidth - (horizontalSpacing * CGFloat(strategy.itemsPerRow + 1))) / CGFloat(strategy.itemsPerRow)
+            let spacing = strategy.horizontalSpacing
+            let itemPerRow = strategy.itemsPerRow
+            let columnWidth = (availableWidth - spacing * CGFloat(itemPerRow + 1)) / CGFloat(itemPerRow)
             let height = floor(columnWidth * strategy.itemAspectRatio)
+
+            let columns = Array(repeating: GridItem(.fixed(columnWidth), spacing: spacing), count: itemPerRow)
+
             ScrollView {
-                VStack(alignment: .leading, spacing: strategy.verticalSpacing) {
-                    let rows = self.node.children.chunked(into: strategy.itemsPerRow)
-                    ForEach(rows.indices, id: \.self) { rowIndex in
-                        RowView(items: rows[rowIndex], width: columnWidth, height: height)
+                LazyVGrid(columns: columns, alignment: .leading, spacing: strategy.verticalSpacing) {
+                    ForEach(node.children, id: \.id) { item in
+                        CollectionItemView(node: item, isFocused: (focusedID == item.uuid))
+                            .frame(width: columnWidth, height: height)
+                            .focused($focusedID, equals: item.uuid)
+                            .zIndex(focusedID == item.uuid ? 1 : 0)
                             .environmentObject(appState)
                             .environmentObject(itemRepository)
                             .environmentObject(drill)
+                            .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
                     }
-                }.frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, spacing)
             }
         }
         .onAppear {

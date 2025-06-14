@@ -20,7 +20,7 @@ struct RelatedVideosView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 32) {
+                LazyHStack(spacing: 32) {
                     ForEach(items, id: \.id) { item in
                         Button {
                             onPush(item)

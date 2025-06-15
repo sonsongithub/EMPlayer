@@ -82,7 +82,7 @@ struct SeriesInfoStrategy {
             }
         }
         #else
-        height = size.height * 0.4
+        height = size.height * 0.3
         hasTitle = true
         titleFont = .title2
         overviewFont = .footnote
@@ -235,11 +235,11 @@ struct SeriesViewStrategy {
         padding = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         #else
         scrollDirection = .horizontal
-        pickerMarginTop = 8
+        pickerMarginTop = 32
         pickerMarginBottom = 0
         episodeVerticalSpace = 8
         episodeHorizontalSpace = 0
-        padding = EdgeInsets(top: 40, leading: 0, bottom: 40, trailing: 0)
+        padding = EdgeInsets(top: 40, leading: 0, bottom: 80, trailing: 0)
         #endif
     }
 

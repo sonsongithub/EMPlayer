@@ -17,6 +17,8 @@ struct CollectionView: View {
     @Environment(\.collectionViewStrategy) var strategy
 
     @FocusState private var focusedID: UUID?
+    
+    var isSearchView = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -41,12 +43,13 @@ struct CollectionView: View {
                             .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
                     }
                 }
+                .padding(.top, isSearchView ? 100 : 0) // Adjust padding for search view on tvOS
                 .padding(.horizontal, spacing)
             }
         }
         .onAppear {
             Task {
-                await node.loadChildren(using: itemRepository)
+                await node.loadChildren(using: itemRepository, reload: false)
             }
         }
     }

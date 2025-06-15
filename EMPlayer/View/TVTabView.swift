@@ -19,7 +19,7 @@ struct SearchResultsView: View {
     @State private var rootNode = ItemNode(item: nil)
 
     var body: some View {
-        CollectionView(node: rootNode)
+        CollectionView(node: rootNode, isSearchView: true)
             .environmentObject(appState)
             .environmentObject(itemRepository)
             .environmentObject(drill)
@@ -112,7 +112,7 @@ struct TVTabView: View {
                                     .environmentObject(itemRepository)
                                     .environmentObject(searchDrill)
                                     .environmentObject(appState)
-                                    .ignoresSafeArea(edges: [.bottom])
+                                    .ignoresSafeArea(edges: [.top])
                             case .boxSet(_):
                                 CollectionView(node: node)
                                     .environmentObject(itemRepository)

@@ -329,7 +329,7 @@ struct SeriesView: View {
             .navigationTitle("Test")
         #endif
         #if os(tvOS)
-            .ignoresSafeArea(edges: [.top, .bottom])
+            .ignoresSafeArea(edges: [.top])
         #endif
     }
 }

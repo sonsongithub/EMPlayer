@@ -38,12 +38,15 @@ struct AuthenticationView: View {
                 } didPushServer: { serverInfo in
                     self.selectedServer = serverInfo
                 } didPushHistory: { account in
-                    self.appState.isAuthenticated = true
                     self.appState.userID = account.userID
                     self.appState.server = account.server
                     self.appState.token = account.token
                     self.appState.saveToUserDefaults()
+                    self.appState.isAuthenticated = true
                     self.selectedServer = nil
+                    #if os(iOS)
+                    isPresented = false
+                    #endif
                 }
             }
         }

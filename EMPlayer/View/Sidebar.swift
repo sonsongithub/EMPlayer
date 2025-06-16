@@ -56,30 +56,13 @@ struct Sidebar: View {
                 self.appState.saveToUserDefaults()
                 self.drill.reset()
             }
-            .environmentObject(appState)
-            .environmentObject(accountManager)
-            .environmentObject(itemRepository)
-            .environmentObject(serverDiscovery)
-            .environmentObject(authService)
-            .environmentObject(drill)
             rootView
         }
         .sheet(isPresented: $showLoginSheet) {
                     LoginToServerView()
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(serverDiscovery)
-                        .environmentObject(itemRepository)
-                        .environmentObject(authService)
-                        .environmentObject(drill)
                 }
         .sheet(item: $selectedServer) { server in
             LoginSheetView(selectedServer: $selectedServer)
-                .environmentObject(appState)
-                .environmentObject(accountManager)
-                .environmentObject(itemRepository)
-                .environmentObject(authService)
-                .environmentObject(drill)
         }
         .alert("Are you sure to delete your history?", isPresented: $showAlert) {
             Button("Cancel", role: .cancel) {}

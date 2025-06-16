@@ -20,9 +20,6 @@ struct SearchResultsView: View {
 
     var body: some View {
         CollectionView(node: rootNode, isSearchView: true)
-            .environmentObject(appState)
-            .environmentObject(itemRepository)
-            .environmentObject(drill)
             .navigationTitle("Search Results")
             .onAppear {
                 updateNode()
@@ -83,12 +80,6 @@ struct TVTabView: View {
         TabView(selection: $appState.selectedTab) {
             if self.appState.isAuthenticated {
                 RootView()
-                    .environmentObject(appState)
-                    .environmentObject(itemRepository)
-                    .environmentObject(drill)
-                    .environmentObject(accountManager)
-                    .environmentObject(serverDiscovery)
-                    .environmentObject(authService)
                     .tag(0)
                     .tabItem {
                         Image(systemName: "house")
@@ -96,8 +87,6 @@ struct TVTabView: View {
                     }
                 NavigationStack(path: $searchDrill.stack) {
                     SearchView()
-                        .environmentObject(itemRepository)
-                        .environmentObject(appState)
                         .environmentObject(searchDrill)
                         .navigationDestination(for: ItemNode.self) { node in
                             DestinationRouter(node: node)
@@ -110,12 +99,6 @@ struct TVTabView: View {
                 }
             }
             AuthenticationView()
-                .environmentObject(appState)
-                .environmentObject(itemRepository)
-                .environmentObject(drill)
-                .environmentObject(accountManager)
-                .environmentObject(serverDiscovery)
-                .environmentObject(authService)
                 .tag(2)
                 .tabItem {
                     Image(systemName: "person")

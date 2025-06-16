@@ -15,7 +15,6 @@ struct RootView: View {
     @EnvironmentObject var serverDiscovery: ServerDiscoveryModel
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var authService: AuthService
-    
     @EnvironmentObject var drill: DrillDownStore
     
     @State private var showAuthSheet = false
@@ -32,11 +31,6 @@ struct RootView: View {
                     GeometryReader { geometry in
                         let strategy = CollectionViewStrategy.resolve(using: geometry)
                         CollectionView(node: rootNode)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environmentObject(appState)
-                            .environmentObject(accountManager)
-                            .environmentObject(authService)
                             .environment(\.collectionViewStrategy, strategy)
                     }
                 } else {
@@ -48,6 +42,20 @@ struct RootView: View {
                                 } label: {
                                     Text(child.display())
                                 }
+                            }
+                        }
+                    }
+                    .refreshable {
+                        Task {
+                            guard let root = drill.root else { return }
+                            if root.children.count > 0 {
+                                return
+                            }
+                            let items = try await itemRepository.root()
+                            print("items: \(items.count)")
+                            let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
+                            DispatchQueue.main.async {
+                                drill.root = ItemNode(item: nil, children: children)
                             }
                         }
                     }
@@ -78,75 +86,14 @@ struct RootView: View {
                 }
             }
             .navigationDestination(for: ItemNode.self) { node in
-                switch node.item {
-                case let .collection(base):
-                    GeometryReader { geometry in
-                        let strategy = CollectionViewStrategy.resolve(using: geometry)
-                        CollectionView(node: node)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environmentObject(appState)
-                            .environmentObject(accountManager)
-                            .environmentObject(authService)
-                            .navigationTitle(base.name)
-                            .environment(\.collectionViewStrategy, strategy)
-                    }
-                case let .series(base):
-                    SeriesView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .navigationTitle(base.name)
-                case let .boxSet(base):
-                    GeometryReader { geometry in
-                        let strategy = CollectionViewStrategy.resolve(using: geometry)
-                        CollectionView(node: node)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environmentObject(appState)
-                            .environmentObject(accountManager)
-                            .environmentObject(authService)
-                            .navigationTitle(base.name)
-                            .environment(\.collectionViewStrategy, strategy)
-                    }
-                case let .season(base):
-                    GeometryReader { geometry in
-                        let strategy = CollectionViewStrategy.resolve(using: geometry)
-                        CollectionView(node: node)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environmentObject(appState)
-                            .environmentObject(accountManager)
-                            .environmentObject(authService)
-                            .navigationTitle(base.name)
-                            .environment(\..collectionViewStrategy, strategy)
-                    }
-                case .movie(let base), .episode(let base):
-                    MovieView(item: base,
-                              appState: appState,
-                              itemRepository: itemRepository) {
-                        appState.playingItem = nil
-                    }
-                    .environmentObject(itemRepository)
-                    .environmentObject(drill)
-                    .environmentObject(appState)
-                    .environmentObject(accountManager)
-                    .environmentObject(authService)
-                default:
-                    Text("error")
-                }
+                DestinationRouter(node: node)
             }
         }
         .onAppear() {
             if appState.isAuthenticated {
                 drill.reset()
                 Task {
-                    guard let root = drill.root else { return }
-                        if root.children.count > 0 {
-                            return
-                        }
+                    if let root = drill.root, root.children.count > 0 { return }
                     let items = try await itemRepository.root()
                     print("items: \(items.count)")
                     let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })
@@ -186,9 +133,6 @@ struct RootView: View {
         }
         .sheet(isPresented: $showAuthSheet) {
             AuthenticationView(isPresented: $showAuthSheet)
-                .environmentObject(appState)
-                .environmentObject(accountManager)
-                .environmentObject(authService)
         }
     }
 }

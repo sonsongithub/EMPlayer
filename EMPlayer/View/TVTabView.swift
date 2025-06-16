@@ -100,42 +100,7 @@ struct TVTabView: View {
                         .environmentObject(appState)
                         .environmentObject(searchDrill)
                         .navigationDestination(for: ItemNode.self) { node in
-                            switch node.item {
-                            case .collection(_):
-                                CollectionView(node: node)
-                                    .environmentObject(itemRepository)
-                                    .environmentObject(searchDrill)
-                                    .environmentObject(appState)
-                                    .buttonStyle(.borderless)
-                            case .series(_):
-                                SeriesView(node: node)
-                                    .environmentObject(itemRepository)
-                                    .environmentObject(searchDrill)
-                                    .environmentObject(appState)
-                                    .ignoresSafeArea(edges: [.top])
-                            case .boxSet(_):
-                                CollectionView(node: node)
-                                    .environmentObject(itemRepository)
-                                    .environmentObject(searchDrill)
-                                    .environmentObject(appState)
-                                    .buttonStyle(.borderless)
-                            case .season(_):
-                                ItemNodeView(node: node)
-                                    .environmentObject(itemRepository)
-                                    .environmentObject(searchDrill)
-                                    .environmentObject(appState)
-                            case .movie(let base), .episode(let base):
-                                MovieView(item: base,
-                                          appState: appState,
-                                          itemRepository: itemRepository,) {
-                                    appState.playingItem = nil
-                                }
-                                      .environmentObject(itemRepository)
-                                      .environmentObject(searchDrill)
-                                      .environmentObject(appState)
-                            default:
-                                Text("error")
-                            }
+                            DestinationRouter(node: node)
                         }
                 }
                 .tag(1)

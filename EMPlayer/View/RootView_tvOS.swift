@@ -31,52 +31,7 @@ struct RootView: View {
                 }
             }
             .navigationDestination(for: ItemNode.self) { node in
-                switch node.item {
-                case .collection(_):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .buttonStyle(.borderless)
-                case .series(_):
-                    SeriesView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .ignoresSafeArea(edges: [.bottom])
-                case .boxSet(_):
-                    CollectionView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                        .buttonStyle(.borderless)
-                case .season(_):
-                    ItemNodeView(node: node)
-                        .environmentObject(itemRepository)
-                        .environmentObject(drill)
-                        .environmentObject(appState)
-                        .environmentObject(accountManager)
-                        .environmentObject(authService)
-                case .movie(let base), .episode(let base):
-                    MovieView(item: base,
-                                 appState: appState,
-                                 itemRepository: itemRepository,) {
-                        appState.playingItem = nil
-                    }
-                                 .environmentObject(itemRepository)
-                                 .environmentObject(drill)
-                                 .environmentObject(appState)
-                                 .environmentObject(accountManager)
-                                 .environmentObject(authService)
-                default:
-                    Text("error")
-                }
+                DestinationRouter(node: node)
             }
         }
         .onAppear() {

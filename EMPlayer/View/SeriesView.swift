@@ -192,9 +192,6 @@ struct RootSeasonView: View {
                             ForEach(node.children, id: \.id) { season in
                                 if case .season(_) = season.item {
                                     SeasonView(node: season)
-                                        .environmentObject(appState)
-                                        .environmentObject(itemRepository)
-                                        .environmentObject(drill)
                                         .environment(\.seriesViewStrategy, parentStrategy)
                                         .id(season.uuid)
                                 }
@@ -207,9 +204,6 @@ struct RootSeasonView: View {
                             ForEach(node.children, id: \.id) { season in
                                 if case .season(_) = season.item {
                                     SeasonView(node: season)
-                                        .environmentObject(appState)
-                                        .environmentObject(itemRepository)
-                                        .environmentObject(drill)
                                         .environment(\.seriesViewStrategy, parentStrategy)
                                         .id(season.uuid)
                                 }
@@ -268,9 +262,6 @@ struct SeriesView: View {
             let infoViewStrategy = SeriesInfoStrategy.resolve(using: geometry)
             VStack(alignment: .leading, spacing: 0) {
                 SeriesInfo(node: node)
-                    .environmentObject(appState)
-                    .environmentObject(itemRepository)
-                    .environmentObject(drill)
                     .frame(height: infoViewStrategy.height)
                     .environment(\.seriesViewStrategy, strategy)
                     .environment(\.seriesInfoViewStrategy, infoViewStrategy)
@@ -295,9 +286,6 @@ struct SeriesView: View {
                 .padding(.bottom, strategy.pickerMarginBottom)
                 
                 RootSeasonView(node: node)
-                    .environmentObject(appState)
-                    .environmentObject(itemRepository)
-                    .environmentObject(drill)
                     .environmentObject(viewModel)
                     .environment(\.seriesViewStrategy, strategy)
                     .onAppear() {

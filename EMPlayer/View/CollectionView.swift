@@ -37,14 +37,15 @@ struct CollectionView: View {
                             .frame(width: columnWidth, height: height)
                             .focused($focusedID, equals: item.uuid)
                             .zIndex(focusedID == item.uuid ? 1 : 0)
-                            .environmentObject(appState)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
                             .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
                     }
                 }
                 .padding(.top, isSearchView ? 100 : 0) // Adjust padding for search view on tvOS
                 .padding(.horizontal, spacing)
+            }.refreshable {
+                Task {
+                    await node.loadChildren(using: itemRepository, reload: false)
+                }
             }
         }
         .onAppear {

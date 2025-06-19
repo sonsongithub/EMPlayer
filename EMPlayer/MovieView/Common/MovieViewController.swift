@@ -72,11 +72,18 @@ final class MovieViewController: PlayerViewModel {
     
     @MainActor
     func postCurrnetPlayTimeOfUserData() {
-        let t = Int(self.currentTime * 10000000)
+        var t = 0
+        if self.currentTime > 0 {
+            t = Int(self.currentTime)
+        } else if let player = self.player {
+            t = Int(player.currentTime().seconds)
+        } else {
+            return
+        }
         Task {
             do {
                 let json = [
-                    "PlaybackPositionTicks": t
+                    "PlaybackPositionTicks": t * 10000000
                 ]
                 let data = try JSONSerialization.data(withJSONObject: json, options: [])
                 try await self.itemRepository.putUserData(to: self.item.id, data: data)

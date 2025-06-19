@@ -49,9 +49,9 @@ struct MovieView: View {
         CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose)
             .navigationBarHidden(!viewController.showControls)
             .onDisappear {
+                viewController.postCurrnetPlayTimeOfUserData()
                 viewController.player?.pause()
                 viewController.player = nil
-                viewController.postCurrnetPlayTimeOfUserData()
             }
             .task {
                 await viewController.fetch()

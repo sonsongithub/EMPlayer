@@ -61,8 +61,8 @@ struct MovieView: View {
                 if vm.isPipActive { vm.showControls = false }
             }
             .onDisappear {
-                restoreWindow()
                 vm.postCurrnetPlayTimeOfUserData()
+                restoreWindow()
             }
             .task {
                 await vm.fetch()

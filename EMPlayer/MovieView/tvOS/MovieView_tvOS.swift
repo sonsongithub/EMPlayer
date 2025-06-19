@@ -34,9 +34,9 @@ struct MovieView: View {
         CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose, customInfoControllers: infoVCs)
         .ignoresSafeArea()
         .onDisappear {
+            viewController.postCurrnetPlayTimeOfUserData()
             viewController.player?.pause()
             viewController.player = nil
-            viewController.postCurrnetPlayTimeOfUserData()
         }.toolbar(tabBarVisibility, for: .tabBar)
         .onDisappear() {
             tabBarVisibility = .visible

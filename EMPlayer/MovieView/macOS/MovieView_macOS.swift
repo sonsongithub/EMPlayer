@@ -27,7 +27,7 @@ struct WindowAccessor: NSViewRepresentable {
 }
 
 struct MovieView: View {
-    @StateObject private var vm: MovieViewController
+    @StateObject private var viewController: MovieViewController
     var onClose: () -> Void
     // 既存ウィンドウ値保持
     @State private var originalTitleVisibility: NSWindow.TitleVisibility = .visible
@@ -38,12 +38,12 @@ struct MovieView: View {
     @State private var originalSeparatorStyle: NSTitlebarSeparatorStyle = .automatic
 
     init(item: BaseItem, app: AppState, repo: ItemRepository, onClose: @escaping () -> Void) {
-        _vm = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
+        _viewController = .init(wrappedValue: MovieViewController(currentItem: item, appState: app, repo: repo))
         self.onClose = onClose
     }
 
     var body: some View {
-        CustomVideoPlayerView(playerViewModel: vm, onClose: onClose)
+        CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose)
             .overlay(
                 WindowAccessor { window in
                     if originalTitleVisibility == .visible {
@@ -57,15 +57,22 @@ struct MovieView: View {
                     applyFullOverlay(to: window)
                 }
                 .allowsHitTesting(false)
-            ).onChange(of: vm.isPipActive) {
-                if vm.isPipActive { vm.showControls = false }
+            ).onChange(of: viewController.isPipActive) {
+                if viewController.isPipActive { viewController.showControls = false }
             }
             .onDisappear {
-                vm.postCurrnetPlayTimeOfUserData()
+                viewController.postCurrnetPlayTimeOfUserData()
                 restoreWindow()
             }
             .task {
-                await vm.fetch()
+                do {
+                    try await viewController.updateOwnDetail()
+                    try viewController.play()
+                    let _ = try await viewController.loadSameSeasonItems()
+                } catch {
+                    print("Error in MovieView: \(error)")
+                }
+                
             }
     }
 

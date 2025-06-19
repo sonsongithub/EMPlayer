@@ -54,7 +54,13 @@ struct MovieView: View {
                 viewController.player = nil
             }
             .task {
-                await viewController.fetch()
+                do {
+                    try await viewController.updateOwnDetail()
+                    try viewController.play()
+                    let _ = try await viewController.loadSameSeasonItems()
+                } catch {
+                    print("Error in MovieView: \(error)")
+                }
             }.prefersHomeIndicatorAutoHidden()
     }
 }

@@ -38,6 +38,7 @@ final class MovieViewController: PlayerViewModel {
     let appState: AppState
     let itemRepository: ItemRepository
     var item: BaseItem
+    var sameSeasonItems: [BaseItem] = []
     
     init(currentItem: BaseItem, appState: AppState, repo: ItemRepository) {
         item = currentItem
@@ -94,8 +95,7 @@ final class MovieViewController: PlayerViewModel {
     }
     
     @MainActor
-    func getSeason(of item: BaseItem) async throws -> [BaseItem] {
-        let detail = try await itemRepository.detail(of: item)
+    func getSeason(of detail: BaseItem) async throws -> [BaseItem] {
         guard let seriesID = detail.seriesId else { throw ContentError.notFoundSeason }
         
         let parent = try await itemRepository.detail(of: seriesID)
@@ -110,48 +110,58 @@ final class MovieViewController: PlayerViewModel {
         }
         throw ContentError.notFoundSeason
     }
-        
-    @MainActor func fetch() async {
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            Task {
-                print("simulator")
-                let url = Bundle.main.url(forResource: "output01", withExtension: "mp4")!
-                let asset = AVURLAsset(url: url)
-                DispatchQueue.main.async {
-                    print("simulator2")
-                    self.playerItem = AVPlayerItem(asset: asset)
-                    self.player?.play()
-                }
-            }
-        } else {
-            do {
-                isLoading = true
-                let (server, token, _) = try appState.get()
-                let detail = try await itemRepository.detail(of: item)
-                
-                
-                guard let url = detail.playableVideo(from: server) else {
-                    throw APIClientError.invalidURL
-                }
-                let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
-                DispatchQueue.main.async {
-                    
-                    self.playerItem = AVPlayerItem(asset: asset)
+    
+    func loadMovieOnSimulator() {
+        print("simulator")
+        let url = Bundle.main.url(forResource: "output01", withExtension: "mp4")!
+        let asset = AVURLAsset(url: url)
+        DispatchQueue.main.async {
+            print("simulator2")
+            self.playerItem = AVPlayerItem(asset: asset)
+            self.player?.play()
+        }
+    }
+    
+    @MainActor
+    func setSeekAccrodingToUserData(detail : BaseItem) {
+        if let temp = detail.userData?.playbackPositionTicks {
+            let s: Double = Double(temp) / 10_000_000.0
+            self.player?.seek(to: .init(seconds: s, preferredTimescale: 600))
+        }
+    }
+
+    func updateOwnDetail() async throws {
+        let detail = try await itemRepository.detail(of: item)
+        self.item = detail
+    }
+    
+    func play() throws {
+        let (server, token, _) = try appState.get()
+        guard let url = self.item.playableVideo(from: server) else {
+            throw APIClientError.invalidURL
+        }
+        let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
+        DispatchQueue.main.async {
+            self.playerItem = AVPlayerItem(asset: asset)
 #if os(tvOS)
-                    self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+            self.playerItem?.externalMetadata = createMetadataItems(for: self.item)
 #endif
-                    self.player?.play()
-                    
-                    if let temp = detail.userData?.playbackPositionTicks {
-                        let s: Double = Double(temp) / 10_000_000.0
-                        self.player?.seek(to: .init(seconds: s, preferredTimescale: 600))
-                    }
-                }
+            self.player?.play()
+            self.setSeekAccrodingToUserData(detail: self.item)
+        }
+    }
+    
+    func loadSameSeasonItems() async throws -> [BaseItem] {
+        var sameSeasonItems = try await getSeason(of: self.item)
+        for i in 0..<sameSeasonItems.count {
+            do {
+                let detail = try await itemRepository.detail(of: sameSeasonItems[i])
+                sameSeasonItems[i] = detail
             } catch {
                 print("Error: \(error)")
-                hasError = true
             }
-            isLoading = false
         }
+        self.sameSeasonItems = sameSeasonItems
+        return sameSeasonItems
     }
 }

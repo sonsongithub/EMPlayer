@@ -43,40 +43,33 @@ struct MovieView: View {
         }
         .onAppear {
             tabBarVisibility = .hidden
+            guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else {
+                viewController.loadMovieOnSimulator()
+                return
+            }
+            
             Task {
-                await viewController.fetch()
-                
-                var children: [BaseItem] = []
-                
                 do {
-                    children.append(contentsOf: try await viewController.getSeason(of: viewController.item))
-                } catch {
-                    print("Error: \(error)")
-                }
-                
-                for i in 0..<children.count {
-                    do {
-                        let detail = try await itemRepository.detail(of: children[i])
-                        children[i] = detail
-                    } catch {
-                        print("Error: \(error)")
-                    }
-                }
-                
-                DispatchQueue.main.async {
-                    let node_children = children.map({ ItemNode(item: $0) })
-                    let target_node = ItemNode(item: viewController.item)
-                    let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { node in
-                        viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
-                        Task {
-                            if let item = node.baseItem {
-                                await viewController.playNewVideo(newItem: item)
+                    try await viewController.updateOwnDetail()
+                    try viewController.play()
+                    let items = try await viewController.loadSameSeasonItems()
+                    DispatchQueue.main.async {
+                        let node_children = items.map({ ItemNode(item: $0) })
+                        let target_node = ItemNode(item: viewController.item)
+                        let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { node in
+                            viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
+                            Task {
+                                if let item = node.baseItem {
+                                    await viewController.playNewVideo(newItem: item)
+                                }
                             }
                         }
+                        let vc = UIHostingController(rootView: view)
+                        vc.title = "Series"
+                        self.infoVCs = [vc]
                     }
-                    let vc = UIHostingController(rootView: view)
-                    vc.title = "Series"
-                    self.infoVCs = [vc]
+                } catch {
+                    print("Error updating detail: \(error)")
                 }
             }
         }

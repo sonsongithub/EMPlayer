@@ -36,8 +36,9 @@ struct RootView: View {
         }
         .onAppear() {
             if appState.isAuthenticated {
-                drill.reset()
+                guard drill.root == nil else { return }
                 Task {
+                    drill.reset()
                     let items = try await itemRepository.root()
                     print("items: \(items.count)")
                     let children = items.map({ ItemNode(item: $0)}).filter({ $0.item != .unknown })

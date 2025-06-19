@@ -90,6 +90,7 @@ struct TVTabView: View {
                         .environmentObject(searchDrill)
                         .navigationDestination(for: ItemNode.self) { node in
                             DestinationRouter(node: node)
+                                .environmentObject(searchDrill)
                         }
                 }
                 .tag(1)

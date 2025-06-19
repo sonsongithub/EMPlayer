@@ -35,6 +35,7 @@ final class HiddenHomeIndicatorViewController: UIHostingController<AnyView> {
 }
 
 struct MovieView: View {
+    @EnvironmentObject var itemRepository: ItemRepository
     @StateObject private var viewController: MovieViewController
     @Environment(\.scenePhase) private var scenePhase
     var onClose: () -> Void
@@ -50,6 +51,7 @@ struct MovieView: View {
             .onDisappear {
                 viewController.player?.pause()
                 viewController.player = nil
+                viewController.postCurrnetPlayTimeOfUserData()
             }
             .task {
                 await viewController.fetch()

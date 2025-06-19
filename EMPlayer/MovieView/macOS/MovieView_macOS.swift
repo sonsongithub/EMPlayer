@@ -62,6 +62,7 @@ struct MovieView: View {
             }
             .onDisappear {
                 restoreWindow()
+                vm.postCurrnetPlayTimeOfUserData()
             }
             .task {
                 await vm.fetch()

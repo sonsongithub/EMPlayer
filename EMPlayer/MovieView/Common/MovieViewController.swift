@@ -58,20 +58,31 @@ final class MovieViewController: PlayerViewModel {
             }
             let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
             DispatchQueue.main.async {
-                
-                
-                
                 self.playerItem = AVPlayerItem(asset: asset)
                 #if os(tvOS)
                 self.playerItem?.externalMetadata = createMetadataItems(for: detail)
                 #endif
                 self.player?.play()
             }
-            
-            
         } catch {
             print("Error: \(error)")
             hasError = true
+        }
+    }
+    
+    @MainActor
+    func postCurrnetPlayTimeOfUserData() {
+        let t = Int(self.currentTime * 10000000)
+        Task {
+            do {
+                let json = [
+                    "PlaybackPositionTicks": t
+                ]
+                let data = try JSONSerialization.data(withJSONObject: json, options: [])
+                try await self.itemRepository.putUserData(to: self.item.id, data: data)
+            } catch {
+                print(error)
+            }
         }
     }
     
@@ -123,8 +134,12 @@ final class MovieViewController: PlayerViewModel {
                     self.playerItem?.externalMetadata = createMetadataItems(for: detail)
 #endif
                     self.player?.play()
+                    
+                    if let temp = detail.userData?.playbackPositionTicks {
+                        let s: Double = Double(temp) / 10_000_000.0
+                        self.player?.seek(to: .init(seconds: s, preferredTimescale: 600))
+                    }
                 }
-                
             } catch {
                 print("Error: \(error)")
                 hasError = true

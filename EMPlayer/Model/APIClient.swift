@@ -104,28 +104,7 @@ class APIClient {
         
         return object.items
     }
-    
-//    def search_item(query, server=EMBY_SERVER, api_key=API_KEY):
-//        url = f"{server}/Items"
-//        headers = {"X-Emby-Token": api_key}
-//        params = {
-//            "SearchTerm": query,  # 検索キーワード
-//            "Recursive": "true",  # サブフォルダも含めて検索
-//            "IncludeItemTypes": "Episode",  # 映画とシリーズを対象
-//            "Fields": "BasicSyncInfo",  # 概要も取得
-//            # "Limit": 30,  # 取得する結果の数
-//            # "IncludeMedia": "true",
-//            # "userId": USER_ID,
-//            # "X-Emby-Language":'ja'
-//        }
-//
-//        response = requests.get(url, headers=headers, params=params)
-//
-//        if response.status_code == 200:
-//            return response.json()
-//        else:
-//            raise Exception(f"Error searching items: {response.status_code} - {response.text}")
-    
+        
     func searchItem(query: String) async throws -> [BaseItem] {
         
         let (server, token, userID) = try getBasicInfomation()
@@ -212,8 +191,6 @@ class APIClient {
         return (server, token, userID)
     }
     
-//    func fetchItemDetail(of item: BaseItem) async throws -> BaseItem {
-        
     func fetchItemDetail(of itemID: String) async throws -> BaseItem {
         let (server, token, userID) = try getBasicInfomation()
         
@@ -237,5 +214,27 @@ class APIClient {
         let object = try decoder.decode(BaseItem.self, from: data)
         
         return object
+    }
+    
+    func putUserData(to itemID: String, data: Data) async throws {
+        let (server, token, userID) = try getBasicInfomation()
+        
+        guard let urlComponents = URLComponents(string: "\(server)/Users/\(userID)/Items/\(itemID)/UserData") else {
+            throw APIClientError.cannotCreateURL
+        }
+        guard let url = urlComponents.url else {
+            throw APIClientError.cannotCreateURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(token, forHTTPHeaderField: "X-Emby-Token")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        request.httpBody = data
+        
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 204 else {
+            throw APIClientError.unauthorized
+        }
     }
 }

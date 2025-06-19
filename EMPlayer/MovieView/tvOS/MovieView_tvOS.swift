@@ -36,6 +36,7 @@ struct MovieView: View {
         .onDisappear {
             viewController.player?.pause()
             viewController.player = nil
+            viewController.postCurrnetPlayTimeOfUserData()
         }.toolbar(tabBarVisibility, for: .tabBar)
         .onDisappear() {
             tabBarVisibility = .visible

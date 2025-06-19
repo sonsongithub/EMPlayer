@@ -109,9 +109,10 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
         loadError = nil
         
         do {
-            let rawChildren = try await repository.children(of: baseItem)
-            self.children = rawChildren.map { ItemNode(nodeType: ItemNode.wrap(baseItem: $0)) }
-
+            if self.children.isEmpty {
+                let rawChildren = try await repository.children(of: baseItem)
+                self.children = rawChildren.map { ItemNode(nodeType: ItemNode.wrap(baseItem: $0)) }
+            }
             // 子要素に詳細データを読み込む（オプション）
             for i in 0..<children.count {
                 await children[i].updateWithDetail(using: repository)

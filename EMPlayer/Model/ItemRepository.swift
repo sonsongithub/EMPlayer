@@ -59,4 +59,9 @@ final class ItemRepository : ObservableObject {
         let items = try await api.searchItem(query: query)
         return items
     }
+    
+    @MainActor
+    func putUserData(to itemID: String, data: Data) async throws {
+        try await api.putUserData(to: itemID, data: data)
+    }
 }

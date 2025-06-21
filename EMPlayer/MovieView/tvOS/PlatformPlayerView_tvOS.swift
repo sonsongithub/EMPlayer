@@ -34,20 +34,18 @@ struct PlatformPlayerView: UIViewControllerRepresentable {
         vc.player?.play()
         return vc
     }
-
+    
     func updateUIViewController(_ vc: AVPlayerViewController, context: Context) {
-        // SwiftUI 側で渡された最新の customInfoControllers を反映
         vc.customInfoViewControllers = customInfoControllers
         
         
-        if #available(tvOS 16.0, *),
-           let movieVC = viewModel as? MovieViewController,
-           movieVC.hasNextEpisode()
+        if #available(tvOS 16.0, *), let movieVC = viewModel as? MovieViewController, movieVC.hasNextEpisode()
         {
             let nextAction = UIAction(
-                title: "次のエピソード",
-                image: UIImage(systemName: "forward.end.fill")
-            ) { _ in
+                title: "Next Episode",
+                image: UIImage(systemName: "forward.fill")
+            ) { [weak movieVC] _ in
+                guard let movieVC else { return }
                 movieVC.openNextEpisode()
             }
 

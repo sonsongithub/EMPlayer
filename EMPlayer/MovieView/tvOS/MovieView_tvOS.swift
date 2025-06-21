@@ -27,32 +27,30 @@ struct MovieView: View {
     }
 
     var body: some View {
-        // -- もしくは直接 --
         CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose, customInfoControllers: infoVCs)
         .ignoresSafeArea()
         .onDisappear {
+            tabBarVisibility = .visible
             viewController.postCurrnetPlayTimeOfUserData()
             viewController.player?.pause()
             viewController.player = nil
-        }.toolbar(tabBarVisibility, for: .tabBar)
-        .onDisappear() {
-            tabBarVisibility = .visible
         }
+        .toolbar(tabBarVisibility, for: .tabBar)
         .onAppear {
             tabBarVisibility = .hidden
             guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else {
                 viewController.loadMovieOnSimulator()
                 return
             }
-            
             Task {
                 do {
                     try await viewController.play()
-                    let sameSeasonItems = try await viewController.loadSameSeasonItems()
+                    let (seasons, sameSeasonItems) = try await viewController.loadSameSeasonItems()
                     DispatchQueue.main.async {
                         let node_children = sameSeasonItems.map({ ItemNode(item: $0) })
                         let target_node = ItemNode(item: viewController.item)
-                        let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { node in
+                        let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { [weak viewController] node in
+                            guard let viewController else { return }
                             viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
                             Task {
                                 if let item = node.baseItem {

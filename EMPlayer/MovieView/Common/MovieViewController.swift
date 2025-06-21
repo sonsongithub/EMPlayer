@@ -9,13 +9,21 @@ import AVKit
 import os
 import SwiftUI
 
-func createMetadataItems(for baseItem: BaseItem) -> [AVMetadataItem] {
+func createMetadataItems(for baseItem: BaseItem, seasons: [BaseItem]) -> [AVMetadataItem] {
     var mapping: [AVMetadataIdentifier: Any] = [:]
     
-    mapping[.commonIdentifierTitle] = baseItem.name
+    var prefix_title = ""
+    
+    if let season = seasons.first(where: { $0.name == baseItem.seasonName }) {
+        if let seasonNumber = season.indexNumber, let indexNumber = baseItem.indexNumber {
+            prefix_title = "SE\(seasonNumber):EP\(indexNumber) "
+        }
+    }
+    
+    mapping[.iTunesMetadataTrackSubTitle] = prefix_title + baseItem.name
     
     if let seriessName = baseItem.seriesName {
-        mapping[.commonIdentifierAlbumName] = seriessName
+        mapping[.commonIdentifierTitle] = seriessName
     }
     if let overview = baseItem.overview {
         mapping[.commonIdentifierDescription] = overview
@@ -39,12 +47,18 @@ final class MovieViewController: PlayerViewModel {
     let itemRepository: ItemRepository
     @Published var item: BaseItem
     var sameSeasonItems: [BaseItem] = []
+    var seasons: [BaseItem] = []
     
     init(currentItem: BaseItem, appState: AppState, repo: ItemRepository) {
+        print("MovieViewController.init()")
         item = currentItem
         self.appState = appState
         self.itemRepository = repo
         super.init()
+    }
+    
+    deinit {
+        print("MovieViewController.deinit()")
     }
     
     @MainActor func openNextEpisode() {
@@ -65,6 +79,7 @@ final class MovieViewController: PlayerViewModel {
     @MainActor func playNewVideo(newItem: BaseItem) async {
         do {
             let detail = try await itemRepository.detail(of: newItem)
+            let (seasons, _) = await loadSameSeasonItems()
             let (server, token, _) = try appState.get()
 
             guard let url = detail.playableVideo(from: server) else {
@@ -73,9 +88,11 @@ final class MovieViewController: PlayerViewModel {
             let asset = AVURLAsset(url: url, options: ["AVURLAssetHTTPHeaderFieldsKey": ["X-Emby-Token": token]])
             DispatchQueue.main.async {
                 self.item = detail
+                self.player?.pause()
                 self.playerItem = AVPlayerItem(asset: asset)
                 #if os(tvOS)
-                self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+                self.seasons = seasons
+                self.playerItem?.externalMetadata = createMetadataItems(for: detail, seasons: self.seasons)
                 #endif
                 self.player?.play()
             }
@@ -108,17 +125,16 @@ final class MovieViewController: PlayerViewModel {
     }
     
     @MainActor
-    func getSeason(of detail: BaseItem) async throws -> [BaseItem] {
+    func getSeason(of detail: BaseItem) async throws -> ([BaseItem], [BaseItem]) {
         guard let seriesID = detail.seriesId else { throw ContentError.notFoundSeason }
         
         let parent = try await itemRepository.detail(of: seriesID)
-        let children = try await itemRepository.children(of: parent)
-        
-        for theSeason in children {
+        let seasons = try await itemRepository.children(of: parent)
+        for theSeason in seasons {
             let episodes = try await itemRepository.children(of: theSeason)
             let episode_ids = episodes.map { $0.id }
             if episode_ids.contains(detail.id) {
-                return try await itemRepository.children(of: theSeason)
+                return (seasons, try await itemRepository.children(of: theSeason))
             }
         }
         throw ContentError.notFoundSeason
@@ -146,6 +162,7 @@ final class MovieViewController: PlayerViewModel {
     @MainActor
     func play() async throws {
         let detail = try await itemRepository.detail(of: self.item)
+        let (seasons, _) = await loadSameSeasonItems()
         let (server, token, _) = try appState.get()
         guard let url = detail.playableVideo(from: server) else {
             throw APIClientError.invalidURL
@@ -154,7 +171,8 @@ final class MovieViewController: PlayerViewModel {
         DispatchQueue.main.async {
             self.playerItem = AVPlayerItem(asset: asset)
 #if os(tvOS)
-            self.playerItem?.externalMetadata = createMetadataItems(for: detail)
+            self.seasons = seasons
+            self.playerItem?.externalMetadata = createMetadataItems(for: detail, seasons: self.seasons)
 #endif
             self.player?.play()
             self.setSeekAccrodingToUserData(detail: detail)
@@ -162,16 +180,21 @@ final class MovieViewController: PlayerViewModel {
         }
     }
     
-    func loadSameSeasonItems() async throws -> [BaseItem] {
-        var sameSeasonItems = try await getSeason(of: self.item)
-        for i in 0..<sameSeasonItems.count {
-            do {
-                let detail = try await itemRepository.detail(of: sameSeasonItems[i])
-                sameSeasonItems[i] = detail
-            } catch {
-                print("Error: \(error)")
+    func loadSameSeasonItems() async -> ([BaseItem], [BaseItem]) {
+        do {
+            var (seasons, sameSeasonItems) = try await getSeason(of: self.item)
+            for i in 0..<sameSeasonItems.count {
+                do {
+                    let detail = try await itemRepository.detail(of: sameSeasonItems[i])
+                    sameSeasonItems[i] = detail
+                } catch {
+                    print("Error: \(error)")
+                }
             }
+            return (seasons, sameSeasonItems)
+        } catch {
+            print("Error: \(error)")
+            return ([], [])
         }
-        return sameSeasonItems
     }
 }

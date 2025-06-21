@@ -67,7 +67,7 @@ struct MovieView: View {
             .task {
                 do {
                     try await viewController.play()
-                    let sameSeasonItems = try await viewController.loadSameSeasonItems()
+                    let (_, sameSeasonItems) = await viewController.loadSameSeasonItems()
                     DispatchQueue.main.async {
                         viewController.sameSeasonItems = sameSeasonItems
                     }

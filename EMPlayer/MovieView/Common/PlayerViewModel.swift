@@ -32,6 +32,24 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
             configurePlayer()
         }
     }
+    
+    func hasNextEpisode() -> Bool {
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return true
+        }
+        if let viewController = self as? MovieViewController {
+            let items = viewController.sameSeasonItems
+            let candidates = items.filter({(item: BaseItem) in
+                if let lhsIndex = item.indexNumber, let rhsIndex = viewController.item.indexNumber {
+                    return lhsIndex == (rhsIndex + 1)
+                }
+                return false
+            })
+            return !candidates.isEmpty
+        }
+        return false
+    }
+    
 #if os(iOS) || os(tvOS)
     var avPlayerViewController: AVPlayerViewController?
 #endif
@@ -42,10 +60,12 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
             hasError = true
             return
         }
+#if !os(tvOS)
         if let t = timeObserved {
             player?.removeTimeObserver(t)
             timeObserved = nil
         }
+#endif
         player = AVPlayer(playerItem: item)
         
         isReady = true
@@ -122,22 +142,6 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
 #endif
     }
     
-    func hasNextEpisode() -> Bool {
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return true
-        }
-        if let viewController = self as? MovieViewController {
-            let items = viewController.sameSeasonItems
-            let candidates = items.filter({(item: BaseItem) in
-                if let lhsIndex = item.indexNumber, let rhsIndex = viewController.item.indexNumber {
-                    return lhsIndex == (rhsIndex + 1)
-                }
-                return false
-            })
-            return !candidates.isEmpty
-        }
-        return false
-    }
     
     func startTimer() {
         timer?.cancel()

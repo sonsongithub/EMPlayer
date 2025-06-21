@@ -10,8 +10,6 @@
 import AVKit
 import SwiftUI
 
-
-
 struct MovieView: View {
     @StateObject private var viewController: MovieViewController
     @EnvironmentObject var appState: AppState
@@ -19,7 +17,6 @@ struct MovieView: View {
     @EnvironmentObject var drill: DrillDownStore
     @State var tabBarVisibility: Visibility = .visible
 
-    /// ここでホスティングコントローラを @State で保持
     @State private var infoVCs: [UIViewController] = []
 
     var onClose: () -> Void
@@ -50,11 +47,10 @@ struct MovieView: View {
             
             Task {
                 do {
-                    try await viewController.updateOwnDetail()
-                    try viewController.play()
-                    let items = try await viewController.loadSameSeasonItems()
+                    try await viewController.play()
+                    let sameSeasonItems = try await viewController.loadSameSeasonItems()
                     DispatchQueue.main.async {
-                        let node_children = items.map({ ItemNode(item: $0) })
+                        let node_children = sameSeasonItems.map({ ItemNode(item: $0) })
                         let target_node = ItemNode(item: viewController.item)
                         let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { node in
                             viewController.avPlayerViewController?.presentedViewController?.dismiss(animated: true)
@@ -64,6 +60,7 @@ struct MovieView: View {
                                 }
                             }
                         }
+                        viewController.sameSeasonItems = sameSeasonItems
                         let vc = UIHostingController(rootView: view)
                         vc.title = "Series"
                         self.infoVCs = [vc]

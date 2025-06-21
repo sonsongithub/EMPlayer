@@ -15,6 +15,7 @@ struct PlaybackControlsView: View {
     @ObservedObject var playerViewModel: PlayerViewModel
     @State private var isSeekingVolume = false
     var onClose: () -> Void = {}
+    var toNext: () -> Void = {}
     @Environment(\.horizontalSizeClass) private var hSizeClass
     
     private var soubdVolume: some View {
@@ -63,8 +64,8 @@ struct PlaybackControlsView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-             
-            if hSizeClass == .compact {
+            
+            if hSizeClass == .compact && false {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     transportButtons
@@ -73,14 +74,42 @@ struct PlaybackControlsView: View {
                 .padding(.horizontal)
                 soubdVolume
             } else {
-                HStack(spacing: 0) {
-                    soubdVolume.hidden()
-                    Spacer(minLength: 0)
-                    transportButtons
-                    Spacer(minLength: 0)
-                    soubdVolume
+                Group {
+                    ZStack {
+                        if playerViewModel.hasNextEpisode() {
+                            VStack(alignment: .leading) {
+                                HStack(spacing: 0) {
+                                    Button {
+                                        if let viewController = playerViewModel as? MovieViewController {
+                                            viewController.openNextEpisode()
+                                        }
+                                    } label: {
+                                        Image(systemName: "forward.fill")
+                                        Text("Next episode")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .bold()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .background(.white.opacity(0.2))
+                                    .cornerRadius(6)
+                                    Spacer(minLength: 0)
+                                }
+                            }
+                        }
+                        VStack(alignment: .center) {
+                            HStack(spacing: 0) {
+                                transportButtons
+                            }
+                        }
+                        VStack(alignment: .trailing) {
+                            HStack(spacing: 0) {
+                                Spacer(minLength: 0)
+                                soubdVolume
+                            }
+                        }
+                    }
                 }
-                .padding(.horizontal)
             }
             VStack(spacing: 0) {
                 CustomSeekBar(value: $playerViewModel.currentTime,
@@ -111,5 +140,13 @@ private extension Double {
         return String(format: "%02d:%02d", Int(self) / 60, Int(self) % 60)
     }
 }
+
+#if os(iOS)
+
+#Preview {
+    MovieView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+}
+
+#endif
 
 #endif

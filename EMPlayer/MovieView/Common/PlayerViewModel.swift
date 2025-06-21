@@ -26,8 +26,8 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
     
     var doesManageCursor = false
     
-    var player: AVPlayer?
-    var playerItem: AVPlayerItem? {
+    @Published var player: AVPlayer?
+    @Published var playerItem: AVPlayerItem? {
         didSet {
             configurePlayer()
         }
@@ -41,6 +41,10 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         guard let item = playerItem else {
             hasError = true
             return
+        }
+        if let t = timeObserved {
+            player?.removeTimeObserver(t)
+            timeObserved = nil
         }
         player = AVPlayer(playerItem: item)
         
@@ -117,7 +121,24 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         }
 #endif
     }
-
+    
+    func hasNextEpisode() -> Bool {
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return true
+        }
+        if let viewController = self as? MovieViewController {
+            let items = viewController.sameSeasonItems
+            let candidates = items.filter({(item: BaseItem) in
+                if let lhsIndex = item.indexNumber, let rhsIndex = viewController.item.indexNumber {
+                    return lhsIndex == (rhsIndex + 1)
+                }
+                return false
+            })
+            return !candidates.isEmpty
+        }
+        return false
+    }
+    
     func startTimer() {
         timer?.cancel()
         timer = DispatchSource.makeTimerSource(queue: .main)

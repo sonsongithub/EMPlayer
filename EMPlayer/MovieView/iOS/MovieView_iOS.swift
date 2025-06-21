@@ -55,9 +55,11 @@ struct MovieView: View {
             }
             .task {
                 do {
-                    try await viewController.updateOwnDetail()
-                    try viewController.play()
-                    let _ = try await viewController.loadSameSeasonItems()
+                    try await viewController.play()
+                    let sameSeasonItems = try await viewController.loadSameSeasonItems()
+                    DispatchQueue.main.async {
+                        viewController.sameSeasonItems = sameSeasonItems
+                    }
                 } catch {
                     print("Error in MovieView: \(error)")
                 }

@@ -58,59 +58,62 @@ struct CustomVideoPlayerView: View {
 #endif
 
     var body: some View {
-        ZStack {
-            if playerViewModel.isLoading {
-                ProgressView("Loading…").tint(.white)
-            } else if playerViewModel.hasError {
-                Text("Can't load").foregroundColor(.white)
-            } else if let player = playerViewModel.player {
-                PlatformPlayerView(player: player, viewModel: self.playerViewModel)
-                    .id(playerViewModel.playerItem?.asset)
-                    .ignoresSafeArea()
-            }
+        GeometryReader { proxy in
+            let strategy = MovieViewStrategy(screenSize: proxy.size)
+            ZStack {
+                if playerViewModel.isLoading {
+                    ProgressView("Loading…").tint(.white)
+                } else if playerViewModel.hasError {
+                    Text("Can't load").foregroundColor(.white)
+                } else if let player = playerViewModel.player {
+                    PlatformPlayerView(player: player, viewModel: self.playerViewModel)
+                        .id(playerViewModel.playerItem?.asset)
+                        .ignoresSafeArea()
+                }
 #if os(macOS)
-            if playerViewModel.showControls {
-                macOSButtons
-            }
-            
-            if !playerViewModel.showControls {
-                MouseMoveTracker { playerViewModel.resetInteraction() }
-            }
+                if playerViewModel.showControls {
+                    macOSButtons
+                }
+                
+                if !playerViewModel.showControls {
+                    MouseMoveTracker { playerViewModel.resetInteraction() }
+                }
 #endif
-            if playerViewModel.showControls {
-                VStack {
-                    Spacer()
-                    PlaybackControlsView(playerViewModel: playerViewModel, onClose: onClose)
-                        .padding(16)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                if playerViewModel.showControls {
+                    VStack {
+                        Spacer()
+                        PlaybackControlsView(playerViewModel: playerViewModel, onClose: onClose)
+                            .padding(16)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(12)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                            .environment(\.movieViewStrategy, strategy)
+                    }
                 }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            playerViewModel.resetInteraction()
-        }
-        .focusable()
+            .background(Color.black)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                playerViewModel.resetInteraction()
+            }
+            .focusable()
 #if os(macOS)
-    #if swift(>=5.7)
-        .onExitCommand(perform: onClose)
-    #else
-        .onCancelCommand(perform: onClose)
-    #endif
+#if swift(>=5.7)
+            .onExitCommand(perform: onClose)
+#else
+            .onCancelCommand(perform: onClose)
 #endif
-        .onAppear {
-            playerViewModel.startTimer()
+#endif
+            .onAppear {
+                playerViewModel.startTimer()
+            }
+            .onDisappear {
+                playerViewModel.player?.pause()
+                playerViewModel.player = nil
+            }
+            .focusEffectDisabled()
         }
-        .onDisappear {
-            playerViewModel.player?.pause()
-            playerViewModel.player = nil
-        }
-        .focusEffectDisabled()
     }
 }
 

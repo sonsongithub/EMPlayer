@@ -17,6 +17,7 @@ struct PlaybackControlsView: View {
     var onClose: () -> Void = {}
     var toNext: () -> Void = {}
     @Environment(\.horizontalSizeClass) private var hSizeClass
+    @Environment(\.movieViewStrategy) var strategy
     
     private var soubdVolume: some View {
         HStack(spacing: 4) {
@@ -64,8 +65,17 @@ struct PlaybackControlsView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            
-            if hSizeClass == .compact && false {
+            Spacer()
+            if let viewController = playerViewModel as? MovieViewController {
+                HStack {
+                    Text(viewController.item.name)
+                        .font(.title2)
+                        .bold()
+                    Spacer()
+                }
+                .padding(.horizontal)
+            }
+            if !strategy.isPad && strategy.isPortrait {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     transportButtons

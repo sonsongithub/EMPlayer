@@ -46,24 +46,26 @@ struct MovieView: View {
     }
 
     var body: some View {
-        CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose)
-            .navigationBarHidden(!viewController.showControls)
-            .onDisappear {
-                viewController.postCurrnetPlayTimeOfUserData()
-                viewController.player?.pause()
-                viewController.player = nil
-            }
-            .task {
-                do {
-                    try await viewController.play()
-                    let sameSeasonItems = try await viewController.loadSameSeasonItems()
-                    DispatchQueue.main.async {
-                        viewController.sameSeasonItems = sameSeasonItems
-                    }
-                } catch {
-                    print("Error in MovieView: \(error)")
+        GeometryReader { geometry in
+            CustomVideoPlayerView(playerViewModel: viewController, onClose: onClose)
+                .navigationBarHidden(!viewController.showControls)
+                .onDisappear {
+                    viewController.postCurrnetPlayTimeOfUserData()
+                    viewController.player?.pause()
+                    viewController.player = nil
                 }
-            }.prefersHomeIndicatorAutoHidden()
+                .task {
+                    do {
+                        try await viewController.play()
+                        let sameSeasonItems = try await viewController.loadSameSeasonItems()
+                        DispatchQueue.main.async {
+                            viewController.sameSeasonItems = sameSeasonItems
+                        }
+                    } catch {
+                        print("Error in MovieView: \(error)")
+                    }
+                }.prefersHomeIndicatorAutoHidden()
+        }
     }
 }
 

@@ -20,7 +20,7 @@ struct EpisodeContent: View {
     
     let appState: AppState
     
-    @Environment(\.episodeViewStrategy) var strategy
+    @Environment(\.seriesViewStrategy) var strategy
     
     @ObservedObject var node: ItemNode
     let id: UUID
@@ -44,26 +44,37 @@ struct EpisodeContent: View {
                         }
                         VStack(alignment: .leading, spacing: 4) {
                             if let index = item.indexNumber {
-                                Text("\(index). \(item.name)")
-                                    .font(strategy.titleFont)
-                                    .lineLimit(1)
-                                    .padding(.bottom, 10)
-                                    .frame(alignment: .leading)
-                                    .foregroundColor(strategy.titleColor)
-                            } else {
-                                Text(item.name)
-                                    .font(strategy.titleFont)
-                                    .lineLimit(2)
-                                    .frame(alignment: .leading)
-                                    .foregroundColor(strategy.titleColor)
+                                HStack {
+                                    Text("Episode \(index)")
+                                        .font(strategy.episode.titleFont)
+                                        .foregroundColor(strategy.episode.titleColor)
+                                        .lineLimit(3)
+                                        .frame(width: .infinity, alignment: .leading)
+                                }
                             }
+                            HStack {
+                                Text("\(item.name)")
+                                    .font(strategy.episode.titleFont)
+                                    .foregroundColor(strategy.episode.titleColor)
+                                    .lineLimit(3)
+                                    .frame(width: .infinity, alignment: .trailing)
+                            }
+                            if let runTime = item.runtimeTicks {
+                                let durationInMinutes = Int(runTime / 10_000_000 / 60)
+                                HStack {
+                                    Spacer()
+                                    Text("\(durationInMinutes) min")
+                                        .font(strategy.episode.titleFont)
+                                        .foregroundColor(strategy.episode.titleColor)
+                                        .lineLimit(3)
+                                        .frame(width: .infinity, alignment: .trailing)
+                                }
+                            }
+                            
                             Text(item.overview ?? "")
-                                .font(strategy.titleFont)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(4)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(strategy.overviewColor)
-                            Spacer(minLength: 0)
+                                .font(strategy.episode.overviewFont)
+                                .foregroundColor(strategy.episode.overviewColor)
+                                .lineLimit(12)
                         }
                     }
                 case .portrait:
@@ -71,7 +82,7 @@ struct EpisodeContent: View {
                         AsyncImage(url: item.imageURL(server: appState.server)) { img in
                             img
                                 .resizable()
-                                .aspectRatio(contentMode: .fit)
+                                .aspectRatio(contentMode: .fill)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .clipped()
                                 .frame(width: geometry.size.width * 1.0)
@@ -79,22 +90,40 @@ struct EpisodeContent: View {
                         } placeholder: {
                             Color.white.opacity(0.6)
                         }
+                        
+                        
                         if let index = item.indexNumber {
-                            Text("\(index). \(item.name)")
-                                .font(strategy.titleFont)
-                                .foregroundColor(strategy.titleColor)
-                                .lineLimit(3)
-                        } else {
-                            Text(item.name)
-                                .font(strategy.titleFont)
-                                .foregroundColor(strategy.titleColor)
-                                .lineLimit(3)
+                            HStack {
+                                Text("Episode \(index)")
+                                    .font(strategy.episode.titleFont)
+                                    .foregroundColor(strategy.episode.titleColor)
+                                    .lineLimit(3)
+                                    .frame(width: .infinity, alignment: .leading)
+                            }
                         }
+                        HStack {
+                            Text("\(item.name)")
+                                .font(strategy.episode.titleFont)
+                                .foregroundColor(strategy.episode.titleColor)
+                                .lineLimit(3)
+                                .frame(width: .infinity, alignment: .trailing)
+                        }
+                        if let runTime = item.runtimeTicks {
+                            let durationInMinutes = Int(runTime / 10_000_000 / 60)
+                            HStack {
+                                Spacer()
+                                Text("\(durationInMinutes) min")
+                                    .font(strategy.episode.titleFont)
+                                    .foregroundColor(strategy.episode.titleColor)
+                                    .lineLimit(3)
+                                    .frame(width: .infinity, alignment: .trailing)
+                            }
+                        }
+                        
                         Text(item.overview ?? "")
-                            .font(strategy.overviewFont)
-                            .foregroundColor(strategy.overviewColor)
-                            .lineLimit(6)
-                        Spacer(minLength: 0)
+                            .font(strategy.episode.overviewFont)
+                            .foregroundColor(strategy.episode.overviewColor)
+                            .lineLimit(12)
                     }
                 }
             } else {

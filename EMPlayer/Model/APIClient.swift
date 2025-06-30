@@ -211,6 +211,10 @@ class APIClient {
             throw APIClientError.unauthorized
         }
         
+        if let str = String(data: data, encoding: .utf8) {
+            print(str)
+        }
+        
         let object = try decoder.decode(BaseItem.self, from: data)
         
         return object

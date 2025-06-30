@@ -37,12 +37,35 @@ struct BaseItem: Codable, Equatable {
     let isFolder: Bool?
     let type: ItemType
     let collectionType: CollectionType?
+    let runtimeTicks: Int?
 
     let userData: UserData?
     
     let imageTags: ImageTags?
     
-    init(name: String, originalTitle: String?, id: String, sourceType: String?, hasSubtitle: Bool?, path: String?, overview: String?, aspectRatio: String?, isHD: Bool?, seriesId: String?, seriesName: String?, seasonName: String?, width: Int?, height: Int?, mediaSource: [MediaSource]?, mediaStreams: [MediaStream]?, indexNumber: Int?, isFolder: Bool?, type: ItemType?, userData: UserData?, imageTags: ImageTags?, collectionType: CollectionType?) {
+    init(name: String,
+         originalTitle: String? = nil,
+         id: String,
+         sourceType: String? = nil,
+         hasSubtitle: Bool? = nil,
+         path: String? = nil,
+         overview: String? = nil,
+         aspectRatio: String? = nil,
+         isHD: Bool? = nil,
+         seriesId: String? = nil,
+         seriesName: String? = nil,
+         seasonName: String? = nil,
+         width: Int? = nil,
+         height: Int? = nil,
+         mediaSource: [MediaSource]? = nil,
+         mediaStreams: [MediaStream]? = nil,
+         indexNumber: Int? = nil,
+         isFolder: Bool? = nil,
+         type: ItemType? = nil,
+         userData: UserData? = nil,
+         imageTags: ImageTags? = nil,
+         collectionType: CollectionType? = nil,
+         runtimeTicks: Int? = nil) {
         self.name = name
         self.originalTitle = originalTitle
         self.id = id
@@ -61,6 +84,7 @@ struct BaseItem: Codable, Equatable {
         self.mediaSource = mediaSource
         self.indexNumber = indexNumber
         self.isFolder = isFolder
+        self.runtimeTicks = runtimeTicks
         if let type = type {
             self.type = type
         } else {
@@ -99,7 +123,8 @@ struct BaseItem: Codable, Equatable {
                   type: item.type,
                   userData: userData,
                   imageTags: item.imageTags,
-                  collectionType: nil
+                  collectionType: nil,
+                  runtimeTicks: nil
         )
     }
 
@@ -125,7 +150,8 @@ struct BaseItem: Codable, Equatable {
         case mediaStreams   = "MediaStreams"
         case userData       = "UserData"
         case imageTags      = "ImageTags"
-        case  collectionType = "CollectionType"
+        case collectionType = "CollectionType"
+        case runtimeTicks   = "RuntimeTicks"
     }
 
 //    func session(positionTicks: Int? = nil) -> PlaybackStart {

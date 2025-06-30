@@ -208,7 +208,9 @@ extension BaseItem {
     // create episode data
     static func createEpisodeData(season: BaseItem) -> [BaseItem] {
         return (1...12).map { index in
-            BaseItem(name: "機動戦士ガンダム 第\(String(describing: index))話",
+            // create random duration
+            let duration = Int.random(in: 20...60) * 60 // 20 to 60 minutes in seconds
+            return BaseItem(name: "機動戦士ガンダム 第\(String(describing: index))話",
                      originalTitle: nil,
                      id: UUID().uuidString,
                      sourceType: nil,
@@ -229,7 +231,8 @@ extension BaseItem {
                      type: .episode,
                      userData: nil,
                      imageTags: nil,
-                     collectionType: nil)
+                     collectionType: nil,
+                     runtimeTicks: duration * 10_000_000) // Convert seconds to ticks (1 tick = 100 nanoseconds)
         }
     }
 }

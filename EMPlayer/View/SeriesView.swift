@@ -7,6 +7,44 @@
 
 import SwiftUI
 
+struct AdaptiveScrollLayout<Content: View>: View {
+
+    let direction: SeriesViewStrategy.ScrollDirection
+    let spacing: CGFloat
+    let height: CGFloat?
+    let content: () -> Content
+
+    init(direction: SeriesViewStrategy.ScrollDirection, spacing: CGFloat = 10, height: CGFloat? = nil, @ViewBuilder content: @escaping () -> Content) {
+        self.direction = direction
+        self.spacing = spacing
+        self.height = height
+        self.content = content
+    }
+
+    var body: some View {
+        Group {
+            switch direction {
+            case .horizontal:
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: spacing) {
+                        content()
+                    }
+                    .padding(.horizontal, spacing)
+                }
+                .frame(height: height)
+
+            case .vertical:
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: spacing) {
+                        content()
+                    }
+                    .padding(.vertical, spacing)
+                }
+            }
+        }
+    }
+}
+
 #if os(tvOS) || os(iOS)
 
 struct VisibleItemPreferenceKey: PreferenceKey {
@@ -27,18 +65,17 @@ struct EpisodeView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let episodeViewStrategy = EpisodeContentStrategy(parentStrategy: strategy)
             if case .episode(_) = node.item {
                 Button {
                     drill.stack.append(node)
                 } label: {
-                    switch episodeViewStrategy.contentLayout {
+                    switch strategy.episode.layout {
                     case .landscape:
                         EpisodeContent(appState: appState, node: node, id: node.uuid, rotation: .landscape)
-                            .padding(episodeViewStrategy.padding)
+                            .padding(strategy.episode.padding)
                     case .portrait:
                         EpisodeContent(appState: appState, node: node, id: node.uuid, rotation: .portrait)
-                            .padding(episodeViewStrategy.padding)
+                            .padding(strategy.episode.padding)
                     }
                 }
                 .onAppear() {
@@ -58,55 +95,29 @@ struct SeasonView: View {
     @EnvironmentObject var drill: DrillDownStore
     @Environment(\.seriesViewStrategy) var strategy
     @ObservedObject var node: ItemNode
-    
+
     var body: some View {
-        let episodeViewStrategy = EpisodeContentStrategy(parentStrategy: strategy)
-        switch strategy.scrollDirection {
-        case .vertical:
-            VStack(spacing: strategy.episodeVerticalSpace) {
-                ForEach(node.children, id: \.id) { item in
-                    if case .episode(_) = item.item {
-                        EpisodeView(node: item)
-                            .environmentObject(appState)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environment(\.seriesViewStrategy, strategy)
-                            .frame(width: episodeViewStrategy.width, height: episodeViewStrategy.height)
-                    }
+        AdaptiveScrollLayout(direction: strategy.scrollDirection,
+                             spacing: strategy.episode.space,
+                             height: strategy.scrollDirection == .horizontal ? strategy.episode.height : nil) {
+            ForEach(node.children, id: \.id) { item in
+                if case .episode(_) = item.item {
+                    EpisodeView(node: item)
+                        .environmentObject(appState)
+                        .environmentObject(itemRepository)
+                        .environmentObject(drill)
+                        .environment(\.seriesViewStrategy, strategy)
+                        .frame(width: strategy.episode.width, height: strategy.episode.height)
                 }
-                .scrollClipDisabled()
+            }
+        }
+        .scrollClipDisabled()
+        .padding(strategy.episodePadding)
 #if os(tvOS)
-                .buttonStyle(.card)
+        .buttonStyle(.card)
 #endif
-            }
-            .onAppear() {
-                Task {
-                    await node.loadChildren(using: itemRepository)
-                }
-            }
-        case .horizontal:
-            HStack(spacing: strategy.episodeHorizontalSpace) {
-                ForEach(node.children, id: \.id) { item in
-                    if case .episode(_) = item.item {
-                        EpisodeView(node: item)
-                            .environmentObject(appState)
-                            .environmentObject(itemRepository)
-                            .environmentObject(drill)
-                            .environment(\.seriesViewStrategy, strategy)
-                            .frame(width: episodeViewStrategy.width, height: episodeViewStrategy.height)
-                    }
-                }
-                .scrollClipDisabled()
-#if os(tvOS)
-                .buttonStyle(.card)
-#endif
-                .padding(episodeViewStrategy.padding)
-            }
-            .onAppear() {
-                Task {
-                    await node.loadChildren(using: itemRepository)
-                }
-            }
+        .task {
+            await node.loadChildren(using: itemRepository)
         }
     }
 }
@@ -116,34 +127,35 @@ struct SeriesInfo: View {
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     @Environment(\.seriesViewStrategy) var strategy
-    @Environment(\.seriesInfoViewStrategy) var infoViewStrategy
     @ObservedObject var node: ItemNode
     
     var body: some View {
         if case let .series(baseItem) = node.item {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 0) {
-                    AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable()
-                                .scaledToFit()
-                                .clipped()
-                        case .failure:
-                            Color.gray
-                        default:
-                            Color.gray
+                    if strategy.info.hasImage {
+                        AsyncImage(url: baseItem.imageURL(server: appState.server)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable()
+                                    .scaledToFit()
+                                    .clipped()
+                            case .failure:
+                                Color.gray
+                            default:
+                                Color.gray
+                            }
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        if infoViewStrategy.hasTitle {
+                        if strategy.info.hasTitle {
                             Text(baseItem.name)
-                                .font(infoViewStrategy.titleFont)
+                                .font(strategy.info.titleFont)
                                 .bold()
                                 .padding()
                         }
                         Text(baseItem.overview ?? "")
-                            .font(infoViewStrategy.overviewFont)
+                            .font(strategy.info.overviewFont)
                             .padding()
                     }
                 }
@@ -188,7 +200,7 @@ struct RootSeasonView: View {
                 switch parentStrategy.scrollDirection {
                 case .horizontal:
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 20) {
+                        HStack(alignment: .top, spacing: 0) {
                             ForEach(node.children, id: \.id) { season in
                                 if case .season(_) = season.item {
                                     SeasonView(node: season)
@@ -200,7 +212,7 @@ struct RootSeasonView: View {
                     }
                 case .vertical:
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 5) {
+                        VStack(alignment: .leading, spacing: 0) {
                             ForEach(node.children, id: \.id) { season in
                                 if case .season(_) = season.item {
                                     SeasonView(node: season)
@@ -259,13 +271,11 @@ struct SeriesView: View {
     var body: some View {
         GeometryReader { geometry in
             let strategy = SeriesViewStrategy.resolve(using: geometry)
-            let infoViewStrategy = SeriesInfoStrategy.resolve(using: geometry)
             VStack(alignment: .leading, spacing: 0) {
                 SeriesInfo(node: node)
-                    .frame(height: infoViewStrategy.height)
+                    .frame(height: strategy.info.height)
                     .environment(\.seriesViewStrategy, strategy)
-                    .environment(\.seriesInfoViewStrategy, infoViewStrategy)
-                    .padding(.horizontal, infoViewStrategy.horizontalPadding)
+                    .padding(.horizontal, strategy.info.horizontalPadding)
                 Picker("Season", selection: Binding<ItemNode?>(
                     get: { viewModel.selectedSeason },
                     set: { newValue in

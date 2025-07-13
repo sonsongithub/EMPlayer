@@ -106,16 +106,16 @@ struct PlaybackControlsView: View {
     }
     #elseif os(iOS)
     private var centerConsole: some View {
-        if !strategy.isPad && strategy.isPortrait {
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                transportButtons
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal)
-            soubdVolume
-        } else {
-            Group {
+        Group {
+            if !strategy.isPad && strategy.isPortrait {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    transportButtons
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal)
+                soubdVolume
+            } else {
                 ZStack {
                     if playerViewModel.hasNextEpisode() {
                         VStack(alignment: .leading) {

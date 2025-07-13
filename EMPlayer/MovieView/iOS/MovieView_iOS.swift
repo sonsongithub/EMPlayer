@@ -71,6 +71,7 @@ struct MovieView: View {
 
 #Preview {
     MovieView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+        
 }
 
 #endif

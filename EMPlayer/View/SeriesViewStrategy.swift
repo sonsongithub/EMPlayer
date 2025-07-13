@@ -55,6 +55,7 @@ struct SeriesViewStrategy {
         let titleColor: Color
         let overviewFont: Font
         let overviewColor: Color
+        let overviewLineLimit: Int
         let padding: EdgeInsets
         let space: CGFloat
     }
@@ -72,13 +73,21 @@ struct SeriesViewStrategy {
             
             let pickerSize = CGFloat(80)
             
-            let infoHeight = (size.height - pickerSize) * 0.5
-            let seasonHeight = (size.height - pickerSize) * 0.3
+            var infoHeight = (size.height - pickerSize) * 0.5
+            var seasonHeight = (size.height - pickerSize) * 0.45
+            
+            if isPortrait {
+                infoHeight = (size.height - pickerSize) * 0.6
+                seasonHeight = (size.height - pickerSize) * 0.45
+            } else {
+                infoHeight = (size.height - pickerSize) * 0.45
+                seasonHeight = (size.height - pickerSize) * 0.6
+            }
             
             screenSize = size
             scrollDirection = .horizontal
             padding = .init()
-            pickerMarginTop = 32
+            pickerMarginTop = 8
             pickerMarginBottom = 8
             episodePadding = .init(top: 0, leading: 0, bottom: 20, trailing: 0)
             info = Info(
@@ -91,14 +100,13 @@ struct SeriesViewStrategy {
             )
             episode = Episode(
                 layout: .portrait,
-//                width: layout == .landscape ? size.width : 320,
-//                height: layout == .landscape ? 200 : seasonHeight,
                 width: 320,
-                height: layout == .landscape ? seasonHeight : seasonHeight + 100,
+                height: layout == .landscape ? seasonHeight : seasonHeight,
                 titleFont: .body,
                 titleColor: .primary,
                 overviewFont: .footnote,
                 overviewColor: .secondary,
+                overviewLineLimit: 6,
                 padding: .init(top: 0, leading: 10, bottom: 0, trailing: 10),
                 space: 30
             )
@@ -195,23 +203,25 @@ struct SeriesViewStrategy {
         pickerMarginBottom = 8
         episodePadding = .init(top: 32, leading: 10, bottom: 32, trailing: 10)
         info = Info(
+            hasImage: true,
             height: infoHeight,
             hasTitle: true,
-            titleFont: .caption,
+            titleFont: .title,
             overviewFont: .footnote,
             horizontalPadding: 10
         )
         
         episode = Episode(
             layout: layout,
-            width: 400,
+            width: 500,
             height: seasonHeight,
             titleFont: .body,
             titleColor: .primary,
             overviewFont: .footnote,
             overviewColor: .secondary,
+            overviewLineLimit: 3,
             padding: .init(top: 20, leading: 20, bottom: 20, trailing: 20),
-            space: 30
+            space: 45
         )
     }
     #endif
@@ -239,9 +249,6 @@ struct SeriesViewStrategy {
             .environmentObject(appState)
             .environmentObject(itemRepository)
             .environmentObject(drill)
-        #if os(iOS)
-            .navigationTitle("Test")
-        #endif
     }
 }
 

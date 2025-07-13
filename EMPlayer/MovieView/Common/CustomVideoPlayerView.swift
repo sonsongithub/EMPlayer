@@ -59,7 +59,9 @@ struct CustomVideoPlayerView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            #if !os(macOS)
             let strategy = MovieViewStrategy(screenSize: proxy.size)
+            #endif
             ZStack {
                 if playerViewModel.isLoading {
                     ProgressView("Loading…").tint(.white)
@@ -88,7 +90,9 @@ struct CustomVideoPlayerView: View {
                             .cornerRadius(12)
                             .padding(.horizontal, 20)
                             .padding(.bottom, 20)
+                        #if os(iOS) || os(tvOS)
                             .environment(\.movieViewStrategy, strategy)
+                        #endif
                     }
                 }
             }
@@ -117,4 +121,10 @@ struct CustomVideoPlayerView: View {
     }
 }
 
+#endif
+
+#if os(iOS)
+#Preview {
+    MovieView(item: BaseItem.dummy, appState: AppState(), itemRepository: ItemRepository(authProviding: AppState())) {}
+}
 #endif

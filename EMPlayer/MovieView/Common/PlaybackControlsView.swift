@@ -17,8 +17,10 @@ struct PlaybackControlsView: View {
     var onClose: () -> Void = {}
     var toNext: () -> Void = {}
     @Environment(\.horizontalSizeClass) private var hSizeClass
-    @Environment(\.movieViewStrategy) var strategy
     
+    #if !os(macOS)
+    @Environment(\.movieViewStrategy) var strategy
+    #endif
     private var soubdVolume: some View {
         HStack(spacing: 4) {
             Image(systemName: "speaker.fill")
@@ -62,10 +64,99 @@ struct PlaybackControlsView: View {
         }
         .font(.title)
     }
+    
+    #if os(macOS)
+    private var centerConsole: some View {
+        Group {
+            ZStack {
+                if playerViewModel.hasNextEpisode() {
+                    VStack(alignment: .leading) {
+                        HStack(spacing: 0) {
+                            Button {
+                                if let viewController = playerViewModel as? MovieViewController {
+                                    viewController.openNextEpisode()
+                                }
+                            } label: {
+                                Image(systemName: "forward.fill")
+                                Text("Next episode")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .bold()
+                            }
+                            .buttonStyle(.bordered)
+                            .background(.white.opacity(0.2))
+                            .cornerRadius(6)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                VStack(alignment: .center) {
+                    HStack(spacing: 0) {
+                        transportButtons
+                    }
+                }
+                VStack(alignment: .trailing) {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        soubdVolume
+                    }
+                }
+            }
+        }
+    }
+    #elseif os(iOS)
+    private var centerConsole: some View {
+        if !strategy.isPad && strategy.isPortrait {
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                transportButtons
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal)
+            soubdVolume
+        } else {
+            Group {
+                ZStack {
+                    if playerViewModel.hasNextEpisode() {
+                        VStack(alignment: .leading) {
+                            HStack(spacing: 0) {
+                                Button {
+                                    if let viewController = playerViewModel as? MovieViewController {
+                                        viewController.openNextEpisode()
+                                    }
+                                } label: {
+                                    Image(systemName: "forward.fill")
+                                    Text("Next episode")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .bold()
+                                }
+                                .buttonStyle(.bordered)
+                                .background(.white.opacity(0.2))
+                                .cornerRadius(6)
+                                Spacer(minLength: 0)
+                            }
+                        }
+                    }
+                    VStack(alignment: .center) {
+                        HStack(spacing: 0) {
+                            transportButtons
+                        }
+                    }
+                    VStack(alignment: .trailing) {
+                        HStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            soubdVolume
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #endif
 
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
             if let viewController = playerViewModel as? MovieViewController {
                 HStack {
                     Text(viewController.item.name)
@@ -75,52 +166,7 @@ struct PlaybackControlsView: View {
                 }
                 .padding(.horizontal)
             }
-            if !strategy.isPad && strategy.isPortrait {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    transportButtons
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal)
-                soubdVolume
-            } else {
-                Group {
-                    ZStack {
-                        if playerViewModel.hasNextEpisode() {
-                            VStack(alignment: .leading) {
-                                HStack(spacing: 0) {
-                                    Button {
-                                        if let viewController = playerViewModel as? MovieViewController {
-                                            viewController.openNextEpisode()
-                                        }
-                                    } label: {
-                                        Image(systemName: "forward.fill")
-                                        Text("Next episode")
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                            .bold()
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .background(.white.opacity(0.2))
-                                    .cornerRadius(6)
-                                    Spacer(minLength: 0)
-                                }
-                            }
-                        }
-                        VStack(alignment: .center) {
-                            HStack(spacing: 0) {
-                                transportButtons
-                            }
-                        }
-                        VStack(alignment: .trailing) {
-                            HStack(spacing: 0) {
-                                Spacer(minLength: 0)
-                                soubdVolume
-                            }
-                        }
-                    }
-                }
-            }
+            centerConsole
             VStack(spacing: 0) {
                 CustomSeekBar(value: $playerViewModel.currentTime,
                               max: playerViewModel.duration,

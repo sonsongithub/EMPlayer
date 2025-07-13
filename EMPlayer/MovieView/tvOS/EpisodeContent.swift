@@ -82,7 +82,7 @@ struct EpisodeContent: View {
                         AsyncImage(url: item.imageURL(server: appState.server)) { img in
                             img
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
+                                .aspectRatio(contentMode: strategy.episode.width > strategy.episode.height ? .fill : .fit)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .clipped()
                                 .frame(width: geometry.size.width * 1.0)
@@ -97,7 +97,7 @@ struct EpisodeContent: View {
                                 Text("Episode \(index)")
                                     .font(strategy.episode.titleFont)
                                     .foregroundColor(strategy.episode.titleColor)
-                                    .lineLimit(3)
+                                    .lineLimit(1)
                                     .frame(width: .infinity, alignment: .leading)
                             }
                         }
@@ -105,7 +105,7 @@ struct EpisodeContent: View {
                             Text("\(item.name)")
                                 .font(strategy.episode.titleFont)
                                 .foregroundColor(strategy.episode.titleColor)
-                                .lineLimit(3)
+                                .lineLimit(1)
                                 .frame(width: .infinity, alignment: .trailing)
                         }
                         if let runTime = item.runtimeTicks {
@@ -115,7 +115,7 @@ struct EpisodeContent: View {
                                 Text("\(durationInMinutes) min")
                                     .font(strategy.episode.titleFont)
                                     .foregroundColor(strategy.episode.titleColor)
-                                    .lineLimit(3)
+                                    .lineLimit(1)
                                     .frame(width: .infinity, alignment: .trailing)
                             }
                         }
@@ -123,7 +123,7 @@ struct EpisodeContent: View {
                         Text(item.overview ?? "")
                             .font(strategy.episode.overviewFont)
                             .foregroundColor(strategy.episode.overviewColor)
-                            .lineLimit(12)
+                            .lineLimit(strategy.episode.overviewLineLimit)
                     }
                 }
             } else {
@@ -144,7 +144,8 @@ struct EpisodeContent: View {
             .environmentObject(itemRepository)
             .environmentObject(drill)
         #if os(iOS)
-            .navigationTitle("Test")
+            .navigationTitle("a")
+            .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 }

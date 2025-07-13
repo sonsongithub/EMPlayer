@@ -151,7 +151,7 @@ struct BaseItem: Codable, Equatable {
         case userData       = "UserData"
         case imageTags      = "ImageTags"
         case collectionType = "CollectionType"
-        case runtimeTicks   = "RuntimeTicks"
+        case runtimeTicks   = "RunTimeTicks"
     }
 
 //    func session(positionTicks: Int? = nil) -> PlaybackStart {

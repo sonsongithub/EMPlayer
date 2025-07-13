@@ -35,9 +35,10 @@ struct DestinationRouter: View {
         case let .series(base):
             SeriesView(node: node)
 #if os(tvOS)
-                .ignoresSafeArea(edges: [.bottom])
+//                .ignoresSafeArea(edges: .top) 
+//                .ignoresSafeArea(edges: [.bottom])
 #elseif os(iOS)
-                    .navigationTitle(base.name)
+                .navigationTitle(base.name)
 #endif
         case let .season(base):
             GeometryReader { geometry in
@@ -48,7 +49,7 @@ struct DestinationRouter: View {
                     .navigationTitle(base.name)
 #endif
             }
-        case .movie(let base), .episode(let base):
+        case .movie(let base), .episode(let base), .musicVideo(let base):
             MovieView(item: base,
                       appState: appState,
                       itemRepository: itemRepository) {

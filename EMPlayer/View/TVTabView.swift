@@ -48,6 +48,7 @@ struct SearchView: View {
     
     var body: some View {
         VStack {
+            Spacer()
             TextField("Search...", text: $query)
                 .onSubmit {
                     Task {
@@ -59,6 +60,7 @@ struct SearchView: View {
                         }
                     }
                 }
+            Spacer()
             if let searchResultsView {
                 searchResultsView
             }
@@ -106,6 +108,7 @@ struct TVTabView: View {
                     Text("Account")
                 }
         }
+        .tabViewStyle(.sidebarAdaptable)
         .onAppear {
             if appState.isAuthenticated {
                 appState.selectedTab = 0

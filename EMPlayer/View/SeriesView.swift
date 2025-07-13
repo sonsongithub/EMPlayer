@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+#if os(tvOS) || os(iOS)
+
 struct AdaptiveScrollLayout<Content: View>: View {
 
     let direction: SeriesViewStrategy.ScrollDirection
@@ -44,8 +46,6 @@ struct AdaptiveScrollLayout<Content: View>: View {
         }
     }
 }
-
-#if os(tvOS) || os(iOS)
 
 struct VisibleItemPreferenceKey: PreferenceKey {
     static var defaultValue: [UUID: CGFloat] = [:]
@@ -323,11 +323,8 @@ struct SeriesView: View {
             .environmentObject(appState)
             .environmentObject(itemRepository)
             .environmentObject(drill)
-        #if os(iOS)
-            .navigationTitle("Test")
-        #endif
         #if os(tvOS)
-            .ignoresSafeArea(edges: [.top])
+//            .ignoresSafeArea(edges: [.top])
         #endif
     }
 }

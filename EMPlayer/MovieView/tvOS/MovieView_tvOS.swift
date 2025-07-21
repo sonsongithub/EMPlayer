@@ -45,9 +45,10 @@ struct MovieView: View {
             Task {
                 do {
                     try await viewController.play()
-                    let (seasons, sameSeasonItems) = try await viewController.loadSameSeasonItems()
+                    let (_, sameSeasonItems) = await viewController.loadSameSeasonItems()
                     DispatchQueue.main.async {
                         let node_children = sameSeasonItems.map({ ItemNode(item: $0) })
+                        guard node_children.count > 0 else { return }
                         let target_node = ItemNode(item: viewController.item)
                         let view = RelatedVideosView(appState: self.appState, items: node_children, target: target_node) { [weak viewController] node in
                             guard let viewController else { return }

@@ -122,6 +122,21 @@ struct SeasonView: View {
     }
 }
 
+func getInfos(baseItem: BaseItem) -> [String] {
+    var infos: [String] = []
+    if let productionYear = baseItem.productionYear {
+        infos.append("\(productionYear)")
+    }
+    if let childCount = baseItem.childCount, childCount > 0 {
+        if childCount == 1 {
+            infos.append("\(childCount) season")
+        } else {
+            infos.append("\(childCount) seasons")
+        }
+    }
+    return infos
+}
+
 struct SeriesInfo: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
@@ -148,12 +163,16 @@ struct SeriesInfo: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        if strategy.info.hasTitle {
-                            Text(baseItem.name)
-                                .font(strategy.info.titleFont)
-                                .bold()
-                                .padding()
+                        Text(baseItem.name)
+                            .font(strategy.info.titleFont)
+                            .bold()
+                            .padding()
+                        HStack {
+                            ForEach(getInfos(baseItem: baseItem), id: \.self) { info in
+                                Text(info)
+                            }
                         }
+                        .padding()
                         Text(baseItem.overview ?? "")
                             .font(strategy.info.overviewFont)
                             .padding()

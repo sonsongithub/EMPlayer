@@ -7,6 +7,19 @@
 
 import SwiftUI
 
+enum ItemNodeKind {
+    case movie
+    case video
+    case musicVideo
+    case episode
+    case series
+    case season
+    case collection
+    case boxSet
+    case root
+    case unknown
+}
+
 enum ItemNodeType: Equatable {
     case root
     case movie(BaseItem)
@@ -36,6 +49,21 @@ enum ItemNodeType: Equatable {
             return "unknown-\(UUID().uuidString)"
         }
     }
+    
+    var kind: ItemNodeKind {
+        switch self {
+        case .movie: return .movie
+        case .video: return .video
+        case .musicVideo: return .musicVideo
+        case .episode: return .episode
+        case .series: return .series
+        case .season: return .season
+        case .collection: return .collection
+        case .boxSet: return .boxSet
+        case .root: return .root
+        case .unknown: return .unknown
+        }
+    }
 }
 
 final class ItemNode: ObservableObject, Identifiable, Hashable {
@@ -48,6 +76,10 @@ final class ItemNode: ObservableObject, Identifiable, Hashable {
     @Published var apectRatio: Double? = nil
     
     let uuid = UUID()
+    
+    func items(of types: Set<ItemNodeKind>) -> [ItemNode] {
+        return children.filter { types.contains($0.item.kind) }
+    }
     
     init(item: BaseItem?) {
         if let base = item {

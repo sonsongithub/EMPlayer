@@ -34,6 +34,8 @@ struct MovieView: View {
             viewController.postCurrnetPlayTimeOfUserData()
             viewController.player?.pause()
             viewController.player = nil
+            self.onClose()
+            NotificationCenter.default.post(name: .collectionViewShouldRefresh, object: nil)
         }
         .toolbar(tabBarVisibility, for: .tabBar)
         .onAppear {

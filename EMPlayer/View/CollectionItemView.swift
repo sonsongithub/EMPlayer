@@ -9,12 +9,97 @@
 
 import SwiftUI
 
-struct CollectionItemView: View {
+struct CollectionLandscapeItemView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var itemRepository: ItemRepository
     @EnvironmentObject var drill: DrillDownStore
     @Environment(\.collectionItemStrategy) var strategy
     
+    @ObservedObject var node: ItemNode
+    let isFocused: Bool
+    
+    
+    @ViewBuilder
+    func asyncImage(imageURL: URL?) -> some View {
+        if let imageURL = imageURL {
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                case .failure:
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                @unknown default:
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                }
+            }
+        } else {
+            Image(systemName: "photo")
+                .resizable()
+                .scaledToFit()
+        }
+    }
+    
+    func seasonInfo(item: BaseItem) -> String? {
+        if let seasonName = item.seasonName, let index = item.indexNumber {
+            return "\(seasonName):EP\(index)"
+        }
+        return nil
+    }
+    
+    var body: some View {
+        
+        GeometryReader { geometry in
+            Group {
+                if let item = node.baseItem {
+                    Button {
+                        drill.stack.append(node)
+                        drill.lastFocusedItemID = node.uuid
+                        print("Focus on item: \(item.name) with ID: \(node.uuid)")
+                    } label: {
+                        VStack(alignment: .center, spacing: strategy.verticalSpacing) {
+                            asyncImage(imageURL: item.imageURL(server: appState.server))
+                                .frame(width: geometry.size.width, height: geometry.size.height * strategy.ratioOfTeaserToHeight)
+                                .clipped()
+                                .cornerRadius(8)
+                            if let text = seasonInfo(item: item) {
+                                Text(text)
+                                    .font(strategy.titleFont)
+                                    .lineLimit(1)
+                            }
+                            Text(item.name)
+                                .font(.caption)
+                                .lineLimit(strategy.titleLineLimit)
+                                .padding(strategy.titlePadding)
+                                .foregroundColor(strategy.titleColor)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("Unknown item type")
+                }
+            }
+            .onAppear {
+                Task {
+                    await node.updateIfNeeded(using: itemRepository)
+                }
+            }
+        }
+    }
+}
+
+struct CollectionItemView: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var itemRepository: ItemRepository
+    @EnvironmentObject var drill: DrillDownStore
+    @Environment(\.collectionItemStrategy) var strategy
     @ObservedObject var node: ItemNode
     let isFocused: Bool
     
@@ -76,6 +161,7 @@ struct CollectionItemView: View {
                 if let item = item {
                     Button {
                         drill.stack.append(node)
+                        drill.lastFocusedItemID = node.uuid
                     } label: {
                         VStack(alignment: .center, spacing: strategy.verticalSpacing) {
                             asyncImage(imageURL: imageURL, aspectRatio: aspectRatio)
@@ -116,7 +202,7 @@ struct CollectionItemView: View {
     let itemRepository = ItemRepository(authProviding: appState)
     
     let children = (0..<20).map { _ in
-        return ItemNode(item: BaseItem.generateRandomItem(type: .series))
+        return ItemNode(item: BaseItem.generateRandomItem(type: .boxSet))
     }
     let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children)
     

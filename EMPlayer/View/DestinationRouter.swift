@@ -21,29 +21,16 @@ struct DestinationRouter: View {
 
     var body: some View {
         switch node.item {
-        case let .collection(base), let .boxSet(base):
-            GeometryReader { geometry in
-                let strategy = CollectionViewStrategy.resolve(using: geometry)
-                CollectionView(node: node)
-                    .environment(\.collectionViewStrategy, strategy)
-#if os(tvOS)
-                    .buttonStyle(.borderless)
-#elseif os(iOS)
-                    .navigationTitle(base.name)
-#endif
-            }
         case let .series(base):
             SeriesView(node: node)
-#if os(tvOS)
-//                .ignoresSafeArea(edges: .top) 
-//                .ignoresSafeArea(edges: [.bottom])
-#elseif os(iOS)
-                .navigationTitle(base.name)
+#if os(iOS)
+//                .navigationTitle(base.name)
 #endif
-        case let .season(base):
+        case let .season(base), let .boxSet(base), let .collection(base):
             GeometryReader { geometry in
                 let strategy = CollectionViewStrategy.resolve(using: geometry)
                 CollectionView(node: node)
+                    
                     .environment(\..collectionViewStrategy, strategy)
 #if os(iOS)
                     .navigationTitle(base.name)

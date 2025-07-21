@@ -149,6 +149,7 @@ struct SeriesViewStrategy {
                     titleColor: .primary,
                     overviewFont: .footnote,
                     overviewColor: .secondary,
+                    overviewLineLimit: 3,
                     padding: .init(top: 0, leading: 10, bottom: 0, trailing: 30),
                     space: 10
                 )
@@ -177,6 +178,7 @@ struct SeriesViewStrategy {
                     titleColor: .primary,
                     overviewFont: .footnote,
                     overviewColor: .secondary,
+                    overviewLineLimit: 3,
                     padding: .init(top: 0, leading: 10, bottom: 0, trailing: 30),
                     space: 10
                 )
@@ -191,8 +193,8 @@ struct SeriesViewStrategy {
         
         let pickerSize = CGFloat(80)
         
-        let infoHeight = (size.height - pickerSize) * 0.35
-        let seasonHeight = (size.height - pickerSize) * 0.6
+        let infoHeight = (size.height - pickerSize) * 0.45
+        let seasonHeight = (size.height - pickerSize) * 0.5
         
         screenSize = size
         isPad = true
@@ -213,11 +215,11 @@ struct SeriesViewStrategy {
         
         episode = Episode(
             layout: layout,
-            width: 500,
+            width: 400,
             height: seasonHeight,
-            titleFont: .body,
+            titleFont: .caption2,
             titleColor: .primary,
-            overviewFont: .footnote,
+            overviewFont: .caption2,
             overviewColor: .secondary,
             overviewLineLimit: 3,
             padding: .init(top: 20, leading: 20, bottom: 20, trailing: 20),

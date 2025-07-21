@@ -13,6 +13,8 @@ final class DrillDownStore: ObservableObject {
     @Published var root: ItemNode? = nil
     @Published var overlay: ItemNode? = nil
     
+    @Published var lastFocusedItemID: UUID?
+    
     var currentNodes: [ItemNode] { stack.last?.children ?? [] }
     
     func reset() {

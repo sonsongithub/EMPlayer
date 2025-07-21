@@ -116,7 +116,7 @@ class APIClient {
         urlComponents.queryItems = [
             URLQueryItem(name: "SearchTerm", value: query),
             URLQueryItem(name: "Recursive", value: "true"),
-            URLQueryItem(name: "IncludeItemTypes", value: "Video,BoxSet,Episode"),
+//            URLQueryItem(name: "IncludeItemTypes", value: "Video,BoxSet,Episode"),
             URLQueryItem(name: "Fields", value: "BasicSyncInfo"),
             URLQueryItem(name: "userId", value: userID)]
         

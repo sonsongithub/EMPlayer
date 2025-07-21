@@ -38,6 +38,8 @@ struct BaseItem: Codable, Equatable {
     let type: ItemType
     let collectionType: CollectionType?
     let runtimeTicks: Int?
+    let childCount: Int?
+    let productionYear: Int?
 
     let userData: UserData?
     
@@ -65,7 +67,9 @@ struct BaseItem: Codable, Equatable {
          userData: UserData? = nil,
          imageTags: ImageTags? = nil,
          collectionType: CollectionType? = nil,
-         runtimeTicks: Int? = nil) {
+         runtimeTicks: Int? = nil,
+         childCount: Int? = nil,
+         productionYear: Int? = nil) {
         self.name = name
         self.originalTitle = originalTitle
         self.id = id
@@ -85,6 +89,8 @@ struct BaseItem: Codable, Equatable {
         self.indexNumber = indexNumber
         self.isFolder = isFolder
         self.runtimeTicks = runtimeTicks
+        self.childCount = childCount
+        self.productionYear = productionYear
         if let type = type {
             self.type = type
         } else {
@@ -124,7 +130,8 @@ struct BaseItem: Codable, Equatable {
                   userData: userData,
                   imageTags: item.imageTags,
                   collectionType: nil,
-                  runtimeTicks: nil
+                  runtimeTicks: nil,
+                  productionYear: nil
         )
     }
 
@@ -152,6 +159,8 @@ struct BaseItem: Codable, Equatable {
         case imageTags      = "ImageTags"
         case collectionType = "CollectionType"
         case runtimeTicks   = "RunTimeTicks"
+        case childCount     = "ChildCount"
+        case productionYear = "ProductionYear"
     }
 
 //    func session(positionTicks: Int? = nil) -> PlaybackStart {

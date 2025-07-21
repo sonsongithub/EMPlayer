@@ -10,25 +10,30 @@ import os
 import SwiftUI
 
 func createMetadataItems(for baseItem: BaseItem, seasons: [BaseItem]) -> [AVMetadataItem] {
+        
     var mapping: [AVMetadataIdentifier: Any] = [:]
     
-    var prefix_title = ""
+    var prefix_title: String? = nil
     
     if let season = seasons.first(where: { $0.name == baseItem.seasonName }) {
         if let seasonNumber = season.indexNumber, let indexNumber = baseItem.indexNumber {
-            prefix_title = "SE\(seasonNumber):EP\(indexNumber) "
+            prefix_title = "SE\(seasonNumber):EP\(indexNumber) " + baseItem.name
         }
     }
     
-    mapping[.iTunesMetadataTrackSubTitle] = prefix_title + baseItem.name
+    if let prefix_title = prefix_title {
+        mapping[.iTunesMetadataTrackSubTitle] = prefix_title
+    } else {
+    }
     
     if let seriessName = baseItem.seriesName {
         mapping[.commonIdentifierTitle] = seriessName
+    } else {
+        mapping[.commonIdentifierTitle] = baseItem.name
     }
     if let overview = baseItem.overview {
         mapping[.commonIdentifierDescription] = overview
     }
-    
     return mapping.compactMap { createMetadataItem(for:$0, value:$1) }
 }
 

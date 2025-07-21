@@ -45,6 +45,8 @@ struct CollectionItemStrategy {
     let titleColor: Color
     let overviewColor: Color
     
+    let landscapeItemWidth: CGFloat
+    
     init(screenSize: CGSize) {
 #if os(iOS)
         isPortrait = screenSize.height >= screenSize.width
@@ -72,6 +74,8 @@ struct CollectionItemStrategy {
         overviewFont = .caption
         titleColor = .primary
         overviewColor = .secondary
+        
+        landscapeItemWidth = 320
 #elseif os(tvOS)
         isPortrait = screenSize.height >= screenSize.width
         isPad = UIDevice.current.userInterfaceIdiom == .pad
@@ -84,6 +88,8 @@ struct CollectionItemStrategy {
         overviewFont = .caption2
         titleColor = .primary
         overviewColor = .secondary
+        
+        landscapeItemWidth = 320
 #endif
     }
     

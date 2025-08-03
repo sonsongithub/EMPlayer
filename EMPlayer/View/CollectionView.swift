@@ -92,33 +92,20 @@ struct CollectionView: View {
                         print("CollectionView disappeared")
                         drill.lastFocusedItemID = nil
                     }
-                    .onChange(of: focusedID) {
-                        // ユーザーがリモコンでフォーカスを動かしたときにスクロール
-                        if let focusedID = focusedID {
-                            print("CollectionView focusedID changed to: \(focusedID)")
-                            proxy.scrollTo(focusedID, anchor: .center)
-                        }
-                    }
                     .onReceive(NotificationCenter.default.publisher(for: .collectionViewShouldRefresh)) { _ in
                         self.currentOpacity = 0.0
                         if let savedID = drill.lastFocusedItemID {
                             print("Attempting to restore focus to \(savedID) from DrillDownStore.")
-                            // 非常に重要: UI スレッドで、View の描画が完了した後に実行
-                            // 複数回試すことで、成功率を高める
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { // 最初の試行
-                                self.focusedID = savedID
-                                proxy.scrollTo(savedID, anchor: .center)
-                                print("1st attempt: Focus and scroll applied for: \(savedID)")
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { // 2回目の試行
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                 self.focusedID = savedID
                                 proxy.scrollTo(savedID, anchor: .center)
                                 print("2nd attempt: Focus and scroll applied for: \(savedID)")
+                                
+                                // 画面を徐々に明るくするアニメーション
+                                withAnimation(.easeIn(duration: 0.5)) { // 0.5秒かけてフェードイン
+                                    self.currentOpacity = 1.0
+                                }
                             }
-                        }
-                        // 画面を徐々に明るくするアニメーション
-                        withAnimation(.easeIn(duration: 0.5)) { // 0.5秒かけてフェードイン
-                            self.currentOpacity = 1.0
                         }
                     }
                     .onAppear {

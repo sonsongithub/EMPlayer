@@ -22,28 +22,57 @@ struct CollectionView: View {
     
     @FocusState private var focusedID: UUID?
     
-    @State private var lastFocusedID: UUID?
-    
-    @State private var currentOpacity: Double = 1.0 // デフォルトは完全に表示
+    @State private var currentOpacity: Double = 1.0
     
     var isSearchView = false
-    @Environment(\.scenePhase) var scenePhase // このまま残しておく
+    
+    @ViewBuilder
+    func portraitCollectionView(geometry: GeometryProxy, spacing: CGFloat) -> some View {
+        
+        let availableWidth = geometry.size.width
+        let itemPerRowPortrait = strategy.itemsPerRow
+        let columnWidthPortrait = (availableWidth - spacing * CGFloat(itemPerRowPortrait + 1)) / CGFloat(itemPerRowPortrait)
+        let heightPortrait = floor(columnWidthPortrait * strategy.itemAspectRatio)
+        let columnsPortrait = Array(repeating: GridItem(.fixed(columnWidthPortrait), spacing: spacing), count: itemPerRowPortrait)
+        
+        LazyVGrid(columns: columnsPortrait, alignment: .leading, spacing: strategy.verticalSpacing) {
+            ForEach(node.items(of: [.series, .movie, .season]), id: \.id) { item in
+                CollectionItemView(node: item, isFocused: (focusedID == item.uuid))
+                    .frame(width: columnWidthPortrait, height: heightPortrait)
+                    .focused($focusedID, equals: item.uuid)
+                    .zIndex(focusedID == item.uuid ? 1 : 0)
+                    .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
+                    .id(item.uuid)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    func landscapeCollectionView(geometry: GeometryProxy, spacing: CGFloat) -> some View {
+        
+        let availableWidth = geometry.size.width
+        let spacingLandscape: CGFloat = spacing
+        let columnWidthLandscape = (availableWidth - spacingLandscape * CGFloat(strategy.itemPerRowLandscape + 1)) / CGFloat(strategy.itemPerRowLandscape)
+        let heightLandscape = floor(columnWidthLandscape / 4.0 * 5.0)
+        let columnsLandscape = Array(repeating: GridItem(.fixed(columnWidthLandscape), spacing: spacingLandscape), count: strategy.itemPerRowLandscape)
+        
+        let alignment: HorizontalAlignment = strategy.itemPerRowLandscape == 1 ? .center : .leading
+        
+        LazyVGrid(columns: columnsLandscape, alignment: alignment, spacing: strategy.verticalSpacing) {
+            ForEach(node.items(of: [.boxSet, .episode, .video, .musicVideo]), id: \.id) { item in
+                CollectionLandscapeItemView(node: item, isFocused: (focusedID == item.uuid))
+                    .frame(width: columnWidthLandscape, height: heightLandscape)
+                    .focused($focusedID, equals: item.uuid)
+                    .zIndex(focusedID == item.uuid ? 1 : 0)
+                    .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
+                    .id(item.uuid)
+            }
+        }
+    }
     
     var body: some View {
             GeometryReader { geometry in
-                let availableWidth = geometry.size.width
-                let spacing = 80.0
-                let itemPerRowPortrait = strategy.itemsPerRow
-                let columnWidthPortrait = (availableWidth - spacing * CGFloat(itemPerRowPortrait + 1)) / CGFloat(itemPerRowPortrait)
-                let heightPortrait = floor(columnWidthPortrait * strategy.itemAspectRatio)
-                let columnsPortrait = Array(repeating: GridItem(.fixed(columnWidthPortrait), spacing: spacing), count: itemPerRowPortrait)
-
-                let itemPerRowLandscape = 4
-                let spacingLandscape: CGFloat = 60.0
-                let columnWidthLandscape = (availableWidth - spacingLandscape * CGFloat(itemPerRowLandscape + 1)) / CGFloat(itemPerRowLandscape)
-                let heightLandscape = floor(columnWidthLandscape / 4.0 * 3.0)
-                let columnsLandscape = Array(repeating: GridItem(.fixed(columnWidthLandscape), spacing: spacingLandscape), count: itemPerRowLandscape)
-
+    
                 ScrollViewReader { proxy in
                     ScrollView {
                         if let baseItem = node.baseItem {
@@ -51,31 +80,13 @@ struct CollectionView: View {
                                 .font(.title2)
                                 .padding()
                         }
-                        LazyVGrid(columns: columnsPortrait, alignment: .leading, spacing: strategy.verticalSpacing) {
-                            ForEach(node.items(of: [.series, .movie, .season]), id: \.id) { item in
-                                CollectionItemView(node: item, isFocused: (focusedID == item.uuid))
-                                    .frame(width: columnWidthPortrait, height: heightPortrait)
-                                    .focused($focusedID, equals: item.uuid)
-                                    .zIndex(focusedID == item.uuid ? 1 : 0)
-                                    .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
-                                    .id(item.uuid)
-                            }
-                        }
+                        portraitCollectionView(geometry: geometry, spacing: strategy.spacing)
                         .padding(.top, isSearchView ? 100 : 0)
-                        .padding(.horizontal, spacing)
-
-                        LazyVGrid(columns: columnsLandscape, alignment: .leading, spacing: 45.0) {
-                            ForEach(node.items(of: [.boxSet, .episode, .video, .musicVideo]), id: \.id) { item in
-                                CollectionLandscapeItemView(node: item, isFocused: (focusedID == item.uuid))
-                                    .frame(width: columnWidthLandscape, height: heightLandscape)
-                                    .focused($focusedID, equals: item.uuid)
-                                    .zIndex(focusedID == item.uuid ? 1 : 0)
-                                    .environment(\.collectionItemStrategy, CollectionItemStrategy.createFrom(parent: strategy))
-                                    .id(item.uuid)
-                            }
-                        }
-                        .padding(.top, 50)
-                        .padding(.horizontal, spacing)
+                        .padding(.horizontal, strategy.spacing)
+                        
+                        landscapeCollectionView(geometry: geometry, spacing: strategy.spacing)
+                        .padding(.top, 5)
+                        .padding(.horizontal, strategy.spacing)
                     }
                     .onDisappear() {
                         print("CollectionView disappeared")
@@ -124,7 +135,6 @@ struct CollectionView: View {
 }
 
 #Preview {
-//    @Previewable @State var shouldRefresh = false
     let appState = AppState()
     let drill = DrillDownStore()
     let itemRepository = ItemRepository(authProviding: appState)
@@ -138,12 +148,10 @@ struct CollectionView: View {
     let children3 = children1 + children2
     let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children3)
     
-    
     CollectionView(node: node)
         .environmentObject(appState)
         .environmentObject(itemRepository)
         .environmentObject(drill)
-//        .frame(width: 1920, height: 1080)
 }
 
 #endif

@@ -79,6 +79,13 @@ struct CollectionLandscapeItemView: View {
                                 .lineLimit(strategy.titleLineLimit)
                                 .padding(strategy.titlePadding)
                                 .foregroundColor(strategy.titleColor)
+                            if let overview = item.overview {
+                                Text(overview)
+                                    .font(strategy.overviewFont)
+                                    .padding(strategy.overviewPadding)
+                                    .foregroundColor(strategy.overviewColor)
+                                    .lineLimit(10)
+                            }
                         }
                     }
                     .buttonStyle(.plain)
@@ -195,26 +202,25 @@ struct CollectionItemView: View {
     }
 }
 
+
 #Preview {
     let appState = AppState()
     let drill = DrillDownStore()
-    let accountManager = AccountManager()
     let itemRepository = ItemRepository(authProviding: appState)
     
-    let children = (0..<20).map { _ in
+    let children1 = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .movie))
+    }
+    let children2 = (0..<20).map { _ in
         return ItemNode(item: BaseItem.generateRandomItem(type: .boxSet))
     }
-    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children)
+    let children3 = children1 + children2
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children3)
     
-    GeometryReader { geometry in
-        let strategy = CollectionViewStrategy.resolve(using: geometry)
-        CollectionView(node: node)
-            .environmentObject(appState)
-            .environmentObject(itemRepository)
-            .environmentObject(drill)
-            .environmentObject(accountManager)
-            .environment(\.collectionViewStrategy, strategy)
-    }
+    CollectionView(node: node)
+        .environmentObject(appState)
+        .environmentObject(itemRepository)
+        .environmentObject(drill)
 }
 
 #endif

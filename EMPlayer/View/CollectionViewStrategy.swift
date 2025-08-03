@@ -113,30 +113,48 @@ struct CollectionViewStrategy {
     let horizontalSpacing: CGFloat
     let itemAspectRatio: CGFloat
     let verticalSpacing: CGFloat
+    let spacing: CGFloat
+    
+    let itemPerRowLandscape: Int
     
     init(screenSize: CGSize) {
         self.screenSize = screenSize
 #if os(iOS)
+        spacing = 20
         isPortrait = screenSize.height >= screenSize.width
+        print(screenSize)
         isPad = UIDevice.current.userInterfaceIdiom == .pad
         switch (isPad, isPortrait) {
-            case (true, true):
-                self.itemsPerRow = 4
-            case (true, false):
-                self.itemsPerRow = 6
-            case (false, true):
-                self.itemsPerRow = 2
-            case (false, false):
-                self.itemsPerRow = 3
+        case (true, true):
+            // iPad, portrait
+            itemPerRowLandscape = 4
+            self.itemsPerRow = 4
+            verticalSpacing = 20
+        case (true, false):
+            // iPad, landscape
+            itemPerRowLandscape = 5
+            self.itemsPerRow = 6
+            verticalSpacing = 20
+        case (false, true):
+            // iPhone, portrait
+            itemPerRowLandscape = 2
+            self.itemsPerRow = 2
+            verticalSpacing = 5
+        case (false, false):
+            // iPhone, landscape
+            itemPerRowLandscape = 3
+            self.itemsPerRow = 3
+            verticalSpacing = 20
         }
         horizontalSpacing = 16
         itemAspectRatio = 6.0 / 3.0
-        verticalSpacing = 20
 #elseif os(tvOS)
+        itemPerRowLandscape = 4
+        spacing = 80
         isPortrait = false
         isPad = false
         verticalSpacing = 16
-        itemsPerRow = 6
+        itemsPerRow = 5
         horizontalSpacing = 48
         itemAspectRatio = 6.0 / 3.0
 #endif
@@ -171,6 +189,51 @@ struct CollectionViewStrategy {
             .environmentObject(accountManager)
             .environment(\.collectionViewStrategy, strategy)
     }
+}
+
+#Preview("iPad Portrait", traits: .portrait) {
+    let appState = AppState()
+    let drill = DrillDownStore()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    let children1 = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .movie))
+    }
+    let children2 = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .boxSet))
+    }
+    let children3 = children1 + children2
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children3)
+    
+    let strategy = CollectionViewStrategy(screenSize: CGSize(width: 768, height: 1024))
+    
+    CollectionView(node: node)
+        .environmentObject(appState)
+        .environmentObject(itemRepository)
+        .environmentObject(drill)
+        .environment(\.collectionViewStrategy, strategy)
+}
+
+#Preview("iPad Landscape", traits: .landscapeLeft) {
+    let appState = AppState()
+    let drill = DrillDownStore()
+    let itemRepository = ItemRepository(authProviding: appState)
+    
+    let children1 = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .movie))
+    }
+    let children2 = (0..<20).map { _ in
+        return ItemNode(item: BaseItem.generateRandomItem(type: .boxSet))
+    }
+    let children3 = children1 + children2
+    let node = ItemNode(item: BaseItem.generateRandomItem(type: .collectionFolder), children: children3)
+    
+    let strategy = CollectionViewStrategy(screenSize: CGSize(width: 1024, height: 768))
+    CollectionView(node: node)
+        .environmentObject(appState)
+        .environmentObject(itemRepository)
+        .environmentObject(drill)
+        .environment(\.collectionViewStrategy, strategy)
 }
 
 #endif

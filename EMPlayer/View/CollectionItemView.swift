@@ -41,9 +41,15 @@ struct CollectionLandscapeItemView: View {
                 }
             }
         } else {
-            Image(systemName: "photo")
+            if node.item.kind == .collection || node.item.kind == .boxSet {
+                Image(systemName: "folder")
                 .resizable()
                 .scaledToFit()
+            } else {
+                Image(systemName: "photo")
+                .resizable()
+                .scaledToFit()
+            }
         }
     }
     
@@ -155,9 +161,15 @@ struct CollectionItemView: View {
                 }
             }
         } else {
-            Image(systemName: "photo")
+            if node.item.kind == .collection || node.item.kind == .boxSet {
+                Image(systemName: "folder")
                 .resizable()
                 .scaledToFit()
+            } else {
+                Image(systemName: "photo")
+                .resizable()
+                .scaledToFit()
+            }
         }
     }
     

@@ -24,15 +24,21 @@ struct ServerInfo: Codable, Identifiable, Hashable {
 }
 
 class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegate {
-    @Published var servers: [ServerInfo] = []
+    @Published var servers: [ServerInfo] = [ServerInfo(address: "http://192.168.64.2:8096", id: "1", name: "Emby Server")]
     var udpSocket: GCDAsyncUdpSocket!
 
     override init() {
-        print(#function)
+        print("ServerDiscoveryModel init")
         super.init()
         setupSocket()
+        sendBroadcastMessage()
     }
 
+    deinit {
+        print("ServerDiscoveryModel deinit")
+        udpSocket.close()
+    }
+    
     func setupSocket() {
         udpSocket = GCDAsyncUdpSocket(delegate: self, delegateQueue: DispatchQueue.main)
 
@@ -47,11 +53,13 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
     }
 
     func sendBroadcastMessage() {
+        print(#function)
         self.servers.removeAll()
+        self.servers = [ServerInfo(address: "http://192.168.64.2:8096", id: "1", name: "Emby Server")]
         
         let message = "who is EmbyServer?"
         let data = message.data(using: .utf8)!
-        let broadcastAddress = "255.255.255.255" // 必要に応じてローカルサブネットブロードキャストに変更
+        let broadcastAddress = "255.255.255.255"
 
         udpSocket.send(data, toHost: broadcastAddress, port: 7359, withTimeout: -1, tag: 0)
         print("Sent message: \(message)")
@@ -61,15 +69,21 @@ class ServerDiscoveryModel: NSObject, ObservableObject, GCDAsyncUdpSocketDelegat
 
         let decoder = JSONDecoder()
         
+        if let temp = String(data: address, encoding: .utf8) {
+            print("OK - Received message: \(temp)")
+        } else {
+            print("OK - Received message: \(address)")
+        }
+        
         if let message = String(data: data, encoding: .utf8) {
             print("OK - Received message: \(message)")
         }
         do {
             let serverInfo = try decoder.decode(ServerInfo.self, from: data)
             self.servers.append(serverInfo)
-            print(serverInfo)
+            print("found - \(serverInfo)")
         } catch {
-            print("デコードエラー: \(error)")
+            print("UDP packet data decoding: \(error)")
         }
     }
 }

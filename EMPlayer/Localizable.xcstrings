@@ -1,0 +1,108 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%lld min" : {
+
+    },
+    "Account" : {
+
+    },
+    "Are you sure to delete your history?" : {
+
+    },
+    "Can not login to the server." : {
+
+    },
+    "Can't load" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Episode %lld" : {
+
+    },
+    "error" : {
+
+    },
+    "Error" : {
+
+    },
+    "History" : {
+
+    },
+    "Home" : {
+
+    },
+    "Loading…" : {
+
+    },
+    "login" : {
+
+    },
+    "Login" : {
+
+    },
+    "Login to %@" : {
+
+    },
+    "Next episode" : {
+
+    },
+    "No server selected" : {
+
+    },
+    "None" : {
+
+    },
+    "OK" : {
+
+    },
+    "Password" : {
+
+    },
+    "Root" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search Results" : {
+
+    },
+    "Search..." : {
+
+    },
+    "Season" : {
+
+    },
+    "Servers" : {
+
+    },
+    "This operation cannot be undone." : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Unknown item type" : {
+
+    },
+    "User name" : {
+
+    },
+    "Username" : {
+
+    }
+  },
+  "version" : "1.0"
+}

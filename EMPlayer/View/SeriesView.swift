@@ -163,10 +163,12 @@ struct SeriesInfo: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(baseItem.name)
-                            .font(strategy.info.titleFont)
-                            .bold()
-                            .padding()
+                        if strategy.info.hasTitle {
+                            Text(baseItem.name)
+                                .font(strategy.info.titleFont)
+                                .bold()
+                                .padding()
+                        }
                         HStack {
                             ForEach(getInfos(baseItem: baseItem), id: \.self) { info in
                                 Text(info)
@@ -328,6 +330,9 @@ struct SeriesView: View {
                     }
             }
             .padding(strategy.padding)
+#if os(iOS)
+            .navigationTitle(node.baseItem?.name ?? "")
+#endif
         }
     }
 }

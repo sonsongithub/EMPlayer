@@ -48,7 +48,7 @@ private func createMetadataItem(for identifier: AVMetadataIdentifier,
 }
 
 final class MovieViewController: PlayerViewModel {
-    let appState: AppState
+    
     let itemRepository: ItemRepository
     @Published var item: BaseItem
     var sameSeasonItems: [BaseItem] = []
@@ -57,9 +57,8 @@ final class MovieViewController: PlayerViewModel {
     init(currentItem: BaseItem, appState: AppState, repo: ItemRepository) {
         print("MovieViewController.init()")
         item = currentItem
-        self.appState = appState
         self.itemRepository = repo
-        super.init()
+        super.init(appState: appState)
     }
     
     deinit {

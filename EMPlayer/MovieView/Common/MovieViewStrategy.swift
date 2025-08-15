@@ -25,7 +25,6 @@ struct MovieViewStrategy {
     let isPortrait: Bool
     
     init(screenSize: CGSize) {
-        print("MovieViewStrategy.init(screenSize: \(screenSize))")
         isPortrait = screenSize.height >= screenSize.width
         isPad = UIDevice.current.userInterfaceIdiom == .pad
     }

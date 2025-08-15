@@ -8,8 +8,12 @@
 import AVKit
 import os
 import SwiftUI
+import Combine
 
 class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerDelegate {
+    private var bag = Set<AnyCancellable>()
+    let appState: AppState
+    
     @Published var isPlaying = false
     @Published var currentTime: Double = 0
     @Published var duration: Double = 1
@@ -31,6 +35,17 @@ class PlayerViewModel: NSObject, ObservableObject, AVPictureInPictureControllerD
         didSet {
             configurePlayer()
         }
+    }
+    
+    init(appState: AppState) {
+        self.appState = appState
+        super.init()
+        // 初期反映
+        self.volume = appState.playerVolume
+        // 双方向同期したい場合
+        $volume.removeDuplicates()
+            .sink { [weak appState] v in appState?.playerVolume = v }
+            .store(in: &bag)
     }
     
     func hasNextEpisode() -> Bool {

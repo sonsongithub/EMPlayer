@@ -71,54 +71,55 @@ struct CollectionView: View {
     }
     
     var body: some View {
-            GeometryReader { geometry in
-    
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        if let baseItem = node.baseItem {
-                            Text(baseItem.name)
-                                .font(.title2)
-                                .padding()
-                        }
-                        portraitCollectionView(geometry: geometry, spacing: strategy.spacing)
-                        .padding(.top, isSearchView ? 100 : 0)
-                        .padding(.horizontal, strategy.spacing)
-                        
-                        landscapeCollectionView(geometry: geometry, spacing: strategy.spacing)
-                        .padding(.top, 5)
-                        .padding(.horizontal, strategy.spacing)
+        GeometryReader { geometry in
+
+            ScrollViewReader { proxy in
+                ScrollView {
+#if os(tvOS)
+                    if let baseItem = node.baseItem {
+                        Text(baseItem.name)
+                            .font(.title2)
+                            .padding()
                     }
-                    .onDisappear() {
-                        print("CollectionView disappeared")
-                        drill.lastFocusedItemID = nil
-                    }
-                    .onReceive(NotificationCenter.default.publisher(for: .collectionViewShouldRefresh)) { _ in
-                        self.currentOpacity = 0.0
-                        if let savedID = drill.lastFocusedItemID {
-                            print("Attempting to restore focus to \(savedID) from DrillDownStore.")
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                self.focusedID = savedID
-                                proxy.scrollTo(savedID, anchor: .center)
-                                print("2nd attempt: Focus and scroll applied for: \(savedID)")
-                                
-                                // 画面を徐々に明るくするアニメーション
-                                withAnimation(.easeIn(duration: 0.5)) { // 0.5秒かけてフェードイン
-                                    self.currentOpacity = 1.0
-                                }
-                            }
-                        }
-                    }
-                    .onAppear {
-                        print("CollectionView appeared")
-                        Task {
-                            if node.children.isEmpty {
-                                await node.loadChildren(using: itemRepository, reload: false)
+#endif
+                    portraitCollectionView(geometry: geometry, spacing: strategy.spacing)
+                    .padding(.top, isSearchView ? 100 : 0)
+                    .padding(.horizontal, strategy.spacing)
+                    landscapeCollectionView(geometry: geometry, spacing: strategy.spacing)
+                    .padding(.top, 5)
+                    .padding(.horizontal, strategy.spacing)
+                }
+                .onDisappear() {
+                    print("CollectionView disappeared")
+                    drill.lastFocusedItemID = nil
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .collectionViewShouldRefresh)) { _ in
+                    self.currentOpacity = 0.0
+                    if let savedID = drill.lastFocusedItemID {
+                        print("Attempting to restore focus to \(savedID) from DrillDownStore.")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            self.focusedID = savedID
+                            proxy.scrollTo(savedID, anchor: .center)
+                            print("2nd attempt: Focus and scroll applied for: \(savedID)")
+                            
+                            // 画面を徐々に明るくするアニメーション
+                            withAnimation(.easeIn(duration: 0.5)) { // 0.5秒かけてフェードイン
+                                self.currentOpacity = 1.0
                             }
                         }
                     }
                 }
-            }.opacity(currentOpacity) // ここで全体の不透明度を制御
-        }
+                .onAppear {
+                    print("CollectionView appeared")
+                    Task {
+                        if node.children.isEmpty {
+                            await node.loadChildren(using: itemRepository, reload: false)
+                        }
+                    }
+                }
+            }
+        }.opacity(currentOpacity) // ここで全体の不透明度を制御
+    }
 }
 
 #Preview {

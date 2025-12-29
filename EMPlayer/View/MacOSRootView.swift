@@ -109,6 +109,8 @@ private struct ListColumn: View {
         List(node.children) { child in
             if child.selected {
                 Text(child.display())
+                    .frame(maxWidth: .infinity, alignment: .leading) // ← 行幅いっぱいに広げる
+                            .contentShape(Rectangle())
                     .bold()
                     .listRowBackground(Color.gray.opacity(0.2))
                     .onTapGesture {
@@ -118,6 +120,8 @@ private struct ListColumn: View {
                     }
             } else {
                 Text(child.display())
+                    .frame(maxWidth: .infinity, alignment: .leading) // ← 行幅いっぱいに広げる
+                            .contentShape(Rectangle())
                     .onTapGesture {
                         print(child.display())
                         node.children.forEach { $0.selected = false }
@@ -128,6 +132,23 @@ private struct ListColumn: View {
         }
         .overlay {
             if node.isLoading { ProgressView() }
+        }.onAppear() {
+            if node.children.count > 0 {
+                print("Auto open \(node.children[0].display())")
+                switch node.children[0].item {
+                case .season(let base):
+                    print("Season: \(base.name)")
+                    node.children[0].selected = true
+                    drill.stack = Array(drill.stack.prefix(index + 1))
+                    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                        drill.detail = node.children[0]
+                    } else {
+                        drill.detail = ItemNode(item: base)
+                    }
+                default:
+                    do {}
+                }
+            }
         }
     }
     

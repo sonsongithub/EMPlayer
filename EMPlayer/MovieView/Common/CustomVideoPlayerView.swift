@@ -99,7 +99,13 @@ struct CustomVideoPlayerView: View {
             .background(Color.black)
             .contentShape(Rectangle())
             .onTapGesture {
-                playerViewModel.resetInteraction()
+                if playerViewModel.showControls {
+                    withAnimation {
+                        playerViewModel.showControls = false
+                    }
+                } else {
+                    playerViewModel.resetInteraction()
+                }
             }
             .focusable()
 #if os(macOS)
